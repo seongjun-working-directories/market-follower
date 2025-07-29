@@ -45,6 +45,7 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 $ ssh -i [YOUR_KEY].pem ubuntu@[EC2_PUBLIC_IP]
 $ sudo apt update
 $ sudo apt install -y docker.io
+$ apt install curl -y
 $ sudo usermod -aG docker $USER
 $ newgrp docker
 
@@ -83,10 +84,15 @@ GHCR	        빌드 완료된 이미지를 저장하고 공유하는 원격 저�
 $ docker build -t market-follower .
 
 다음의 과정을 거쳐야함
+
 # 아이디: 내 깃허브 닉네임 / 비밀번호: 생성한 access token
 $ docker login ghcr.io
 $ docker tag market-follower ghcr.io/seongjun-working-directories/market-follower
 $ docker push ghcr.io/seongjun-working-directories/market-follower
+
+안된다면,
+$ docker pull ghcr.io/seongjun-working-directories/market-follower:latest
+$ docker run -d -p 8080:8080 --name mf ghcr.io/seongjun-working-directories/market-follower:latest
 
 # 이 과정이 끝나면 ghcr.io/seongjun-working-directories/market-follower 여기서 확인 가능
 # 이 링크에 들어가면, 무슨 레포지토리에 연결할거냐고 물어보는데 이때, market-follower 라는 스프링부트 프로젝트 레포지토리에 연결
@@ -186,3 +192,11 @@ GitHub 리포지토리 페이지로 이동
 EC2_HOST	    EC2 퍼블릭 IP 또는 도메인	EC2 서버 접속용 호스트 주소
 EC2_USER	    EC2 접속 사용자명 (ex: ubuntu)	EC2 서버 로그인할 유저명
 EC2_SSH_KEY	    PEM 개인 키 파일 내용 (개인 키 전체 텍스트)	EC2 접속용 SSH 개인 키 (줄바꿈 포함)
+
+
+[AWS EC2 보안 그룹 문제]
+EC2 인스턴스에 연결된 보안 그룹(Security Group) 에서
+포트 8080에 대해 인바운드 허용이 반드시 되어 있어야 합니다.
+AWS 콘솔에서 EC2 → 해당 인스턴스 → 보안 그룹 → 인바운드 규칙
+규칙에 TCP 프로토콜, 8080 포트, 소스는 0.0.0.0/0 (모두 허용) 또는 특정 IP 범위가 있어야 합니다.
+
