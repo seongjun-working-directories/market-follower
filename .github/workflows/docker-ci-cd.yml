@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: CI/CD (Build + Publish + Deploy Docker Image)
 
 on:
   push:
@@ -29,3 +29,19 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull ghcr.io/seongjun-working-directories/market-follower:latest
+            docker rm -f mf || true
+            docker run -d -p 8080:8080 --name mf ghcr.io/seongjun-working-directories/market-follower:latest
