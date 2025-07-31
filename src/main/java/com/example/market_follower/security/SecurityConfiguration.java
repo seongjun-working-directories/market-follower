@@ -20,7 +20,13 @@ public class SecurityConfiguration {
                         // 정적 리소스는 접근을 항상 허용
                         .requestMatchers("/css/**", "/js/**", "/image/**", "/images/**", "/webjars/**").permitAll()
 
-                        .requestMatchers("/", "/swagger-ui/index.html").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/swagger-resources/configuration/ui",
+                                "/swagger-resources/configuration/security"
+                        ).permitAll()
 
                         .requestMatchers("/signup").permitAll()
 
