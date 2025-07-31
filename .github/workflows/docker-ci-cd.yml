@@ -42,6 +42,15 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # 소스 코드 업데이트 (market-follower 디렉토리로 이동)
+            cd ~/market-follower
+            git pull origin main
+            
+            echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
             docker run -d -p 8080:8080 --name mf ghcr.io/seongjun-working-directories/market-follower:latest
+            
+            # 사용하지 않는 이미지 정리
+            docker image prune -f
