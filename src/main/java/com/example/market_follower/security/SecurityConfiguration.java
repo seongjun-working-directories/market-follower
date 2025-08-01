@@ -31,6 +31,8 @@ public class SecurityConfiguration {
                                 "/swagger-resources/configuration/security"
                         ).permitAll()
 
+                        .requestMatchers("/auth/google").permitAll()
+
                         .requestMatchers("/signup").permitAll()
 
                         .requestMatchers("/member/**").hasAuthority("ROLE_ADMIN")
