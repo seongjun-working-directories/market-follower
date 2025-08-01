@@ -8,14 +8,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
+                .csrf(csrf -> csrf.disable())
+
                 .authorizeHttpRequests(auth-> auth
                         // haetlh checker는 항상 허용
                         .requestMatchers("/actuator/health").permitAll()
@@ -31,7 +31,7 @@ public class SecurityConfiguration {
                                 "/swagger-resources/configuration/security"
                         ).permitAll()
 
-                        .requestMatchers("/auth/google").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
 
                         .requestMatchers("/signup").permitAll()
 
@@ -39,7 +39,6 @@ public class SecurityConfiguration {
 
                         .anyRequest().authenticated()
                 )
-                .httpBasic(withDefaults())  // Authorization: Basic base64(username:password) 형식으로 인증하겠다는 선언
                 .headers(headers -> headers
                                 .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin())
                 );
