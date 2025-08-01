@@ -17,6 +17,9 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .authorizeHttpRequests(auth-> auth
+                        // haetlh checker는 항상 허용
+                        .requestMatchers("/actuator/health").permitAll()
+
                         // 정적 리소스는 접근을 항상 허용
                         .requestMatchers("/css/**", "/js/**", "/image/**", "/images/**", "/webjars/**").permitAll()
 
