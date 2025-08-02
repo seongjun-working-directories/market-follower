@@ -175,6 +175,69 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
+    @Operation(
+            summary = "회원가입",
+            description = "이메일, 이름, 핸드폰 번호, 생일 정보를 받아 새로운 회원을 등록합니다.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "회원가입 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "성공",
+                                            description = "회원가입이 성공적으로 완료된 경우"
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 (유효성 검사 실패)",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "string"),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "이메일 형식 오류",
+                                                    value = "유효한 이메일 형식이어야 합니다."
+                                            ),
+                                            @ExampleObject(
+                                                    name = "필수 입력값 누락",
+                                                    value = "이름은 필수입니다."
+                                            ),
+                                            @ExampleObject(
+                                                    name = "핸드폰 번호 형식 오류",
+                                                    value = "핸드폰 번호 형식이 올바르지 않습니다. 예: 010-1234-5678"
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "이미 존재하는 이메일",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "string"),
+                                    examples = @ExampleObject(
+                                            name = "중복 이메일",
+                                            value = "이미 등록된 이메일입니다."
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "서버 내부 오류",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(type = "string"),
+                                    examples = @ExampleObject(
+                                            name = "서버 오류",
+                                            value = "회원가입 처리 중 서버 오류가 발생했습니다."
+                                    )
+                            )
+                    )
+            }
+    )
     public ResponseEntity<?> signupWithGoogle(
             @Valid @RequestBody SignupRequest request,
             BindingResult bindingResult
