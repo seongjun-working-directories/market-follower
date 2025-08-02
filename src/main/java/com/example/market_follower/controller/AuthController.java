@@ -1,6 +1,7 @@
 package com.example.market_follower.controller;
 
 import com.example.market_follower.dto.MemberLoginResponseDto;
+import com.example.market_follower.exception.DuplicateEmailException;
 import com.example.market_follower.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -8,6 +9,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -15,11 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.time.LocalDate;
 
 @Slf4j
 @RestController
@@ -35,6 +44,29 @@ public class AuthController {
     public static class GoogleTokenRequest {
         @Schema(description = "구글 OAuth2 액세스 토큰", example = "ya29.a0AfH6SMC...")
         private String accessToken;
+    }
+
+    @Getter
+    @Setter
+    @Schema(description = "회원가입 요청")
+    public static class SignupRequest {
+        @NotBlank(message = "이메일은 필수입니다.")
+        @Email(message = "유효한 이메일 형식이어야 합니다.")
+        @Schema(description = "이메일", example = "example@gmail.com")
+        private String email;
+
+        @NotBlank(message = "이름은 필수입니다.")
+        @Schema(description = "이름", example = "홍길동")
+        private String name;
+
+        @NotBlank(message = "핸드폰 번호는 필수입니다.")
+        @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "핸드폰 번호 형식이 올바르지 않습니다. 예: 010-1234-5678")
+        @Schema(description = "핸드폰 번호", example = "010-1234-1234")
+        private String phoneNumber;
+
+        @NotNull(message = "생일은 필수입니다.")
+        @Schema(description = "생일", example = "2000-01-01")
+        private LocalDate birthday;
     }
 
     @PostMapping("/google")
@@ -139,6 +171,34 @@ public class AuthController {
         } catch (Exception e) {
             log.error("Google 인증 처리 중 오류 발생", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<?> signupWithGoogle(
+            @Valid @RequestBody SignupRequest request,
+            BindingResult bindingResult
+    ) {
+        try {
+            // 유효성 검사
+            if (bindingResult.hasErrors()) {
+                String errorMsg = bindingResult.getAllErrors()
+                        .stream()
+                        .map(error -> error.getDefaultMessage())
+                        .findFirst()
+                        .orElse("입력값이 올바르지 않습니다.");
+                return ResponseEntity.badRequest().body(errorMsg);
+            }
+
+            authService.signup(request);
+
+            return ResponseEntity.ok().build();
+        } catch (DuplicateEmailException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("회원가입 중 오류 발생", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("회원가입 처리 중 서버 오류가 발생했습니다.");
         }
     }
 
