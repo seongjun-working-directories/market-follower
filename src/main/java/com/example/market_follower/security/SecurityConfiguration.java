@@ -20,9 +20,6 @@ public class SecurityConfiguration {
                         // haetlh checker는 항상 허용
                         .requestMatchers("/actuator/health").permitAll()
 
-                        // h2-console 항상 허용
-                        .requestMatchers("/h2-console/**").permitAll()
-
                         // 정적 리소스는 접근을 항상 허용
                         .requestMatchers("/css/**", "/js/**", "/image/**", "/images/**", "/webjars/**").permitAll()
 
