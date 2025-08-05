@@ -31,6 +31,8 @@ public class SecurityConfiguration {
                                 "/swagger-resources/configuration/security"
                         ).permitAll()
 
+                        .requestMatchers("/h2-console/**").permitAll()
+
                         .requestMatchers("/auth/**").permitAll()
 
                         .requestMatchers("/signup").permitAll()
