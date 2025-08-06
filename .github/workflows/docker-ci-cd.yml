@@ -49,8 +49,11 @@ jobs:
             # GitHub Container Registry 로그인
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
-            # Kafka + Zookeeper 실행
-            docker compose -f infra/docker-compose.kafka.yml up -d
+            # 기존 Kafka, Zookeeper 컨테이너 중지 및 삭제
+            docker-compose -f infra/docker-compose.kafka.yml down
+  
+            # Kafka, Zookeeper 컨테이너 시작
+            docker-compose -f infra/docker-compose.kafka.yml up -d
             
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
