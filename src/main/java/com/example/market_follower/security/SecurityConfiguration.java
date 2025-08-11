@@ -11,6 +11,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfiguration {
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -35,14 +37,17 @@ public class SecurityConfiguration {
 
                         .requestMatchers("/auth/**").permitAll()
 
-                        .requestMatchers("/signup").permitAll()
-
                         .requestMatchers("/member/**").hasAuthority("ROLE_ADMIN")
 
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers
                                 .frameOptions(frameOptionsConfig -> frameOptionsConfig.sameOrigin())
+                )
+
+                //  JWT 인증 필터를 UsernamePasswordAuthenticationFilter 전에 등록
+                .addFilterBefore(
+                        jwtAuthenticationFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class
                 );
 
         return httpSecurity.build();

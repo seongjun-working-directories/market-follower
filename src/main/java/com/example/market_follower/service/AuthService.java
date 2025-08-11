@@ -4,9 +4,12 @@ import com.example.market_follower.controller.AuthController;
 import com.example.market_follower.dto.GoogleUserInfoDto;
 import com.example.market_follower.dto.MemberLoginResponseDto;
 import com.example.market_follower.exception.DuplicateEmailException;
+import com.example.market_follower.model.Auth;
 import com.example.market_follower.model.Member;
 import com.example.market_follower.repository.AuthRepository;
 import com.example.market_follower.repository.MemberRepository;
+import com.example.market_follower.security.JwtTokenProvider;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -25,7 +28,9 @@ import java.util.Optional;
 public class AuthService {
     private final MemberRepository memberRepository;
     private final AuthRepository authRepository;
+    private final JwtTokenProvider jwtTokenProvider;
 
+    @Transactional
     public void signup(AuthController.SignupRequest request) {
         if (memberRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException(request.getEmail());
@@ -39,6 +44,9 @@ public class AuthService {
                 .build();
 
         memberRepository.save(member);
+
+        Auth auth = Auth.builder().member(member).role("ROLE_USER").build();
+        authRepository.save(auth);
     }
 
     public MemberLoginResponseDto loginWithGoogle(String accessToken) {
@@ -51,11 +59,14 @@ public class AuthService {
 
             if (optionalMember.isPresent()) {
                 Member member = optionalMember.get();
+                String jwt = jwtTokenProvider.generateToken(member.getEmail());
+
                 return MemberLoginResponseDto.builder()
                         .status("REGISTERED")
                         .email(member.getEmail())
                         .name(member.getName())
                         .memberId(member.getId())
+                        .jwtToken(jwt)
                         .build();
             } else {
                 return MemberLoginResponseDto.builder()

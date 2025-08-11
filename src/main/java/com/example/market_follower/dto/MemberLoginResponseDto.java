@@ -19,4 +19,6 @@ public class MemberLoginResponseDto {
 
     // 등록된 유저일 경우에만 존재
     private Long memberId;
+
+    private String jwtToken;
 }
