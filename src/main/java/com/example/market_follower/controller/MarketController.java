@@ -1,6 +1,6 @@
 package com.example.market_follower.controller;
 
-import com.example.market_follower.dto.TradableCoinDto;
+import com.example.market_follower.dto.upbit.TradableCoinDto;
 import com.example.market_follower.service.MarketService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

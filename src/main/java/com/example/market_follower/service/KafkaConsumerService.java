@@ -1,6 +1,6 @@
 package com.example.market_follower.service;
 
-import com.example.market_follower.dto.upbit.UpbitTicker;
+import com.example.market_follower.model.UpbitTicker;
 import com.example.market_follower.dto.upbit.UpbitTickerDto;
 import com.example.market_follower.repository.UpbitTickerRepository;
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -1,4 +1,4 @@
-package com.example.market_follower.dto;
+package com.example.market_follower.dto.upbit;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

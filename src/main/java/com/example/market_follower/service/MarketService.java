@@ -1,6 +1,6 @@
 package com.example.market_follower.service;
 
-import com.example.market_follower.dto.TradableCoinDto;
+import com.example.market_follower.dto.upbit.TradableCoinDto;
 import com.example.market_follower.dto.upbit.UpbitMarketApiResponse;
 import com.example.market_follower.model.TradableCoin;
 import com.example.market_follower.repository.TradableCoinRepository;
