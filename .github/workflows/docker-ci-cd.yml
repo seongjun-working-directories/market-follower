@@ -55,6 +55,12 @@ jobs:
             # Kafka, Zookeeper 컨테이너 시작
             docker-compose -f infra/docker-compose.kafka.yml up -d
             
+            # Redis 컨테이너 중지 및 삭제
+            docker-compose -f infra/docker-compose.redis.yml down
+            
+            # Redis 컨테이너 시작
+            docker-compose -f infra/docker-compose.redis.yml up -d
+            
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
             docker run -d -p 8080:8080 --name mf ghcr.io/seongjun-working-directories/market-follower:latest
