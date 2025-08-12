@@ -30,3 +30,40 @@ CREATE TABLE tradable_coin (
     is_caution_concentration_of_small_accounts BOOLEAN,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Upbit Ticker 테이블 생성
+CREATE TABLE upbit_ticker (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    market VARCHAR(255),
+
+    trade_date VARCHAR(255),
+    trade_time VARCHAR(255),
+    trade_date_kst VARCHAR(255),
+    trade_time_kst VARCHAR(255),
+    trade_timestamp BIGINT,
+
+    opening_price DOUBLE,
+    high_price DOUBLE,
+    low_price DOUBLE,
+    trade_price DOUBLE,
+    prev_closing_price DOUBLE,
+
+    change VARCHAR(255),
+    change_price DOUBLE,
+    change_rate DOUBLE,
+    signed_change_price DOUBLE,
+    signed_change_rate DOUBLE,
+
+    trade_volume DOUBLE,
+    acc_trade_price DOUBLE,
+    acc_trade_price_24h DOUBLE,
+    acc_trade_volume DOUBLE,
+    acc_trade_volume_24h DOUBLE,
+
+    highest_52_week_price DOUBLE,
+    highest_52_week_date VARCHAR(255),
+    lowest_52_week_price DOUBLE,
+    lowest_52_week_date VARCHAR(255),
+
+    upbit_timestamp BIGINT
+);

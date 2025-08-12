@@ -2,6 +2,8 @@ package com.example.market_follower.service;
 
 import com.example.market_follower.dto.TradableCoinDto;
 import com.example.market_follower.dto.upbit.UpbitMarketApiResponse;
+import com.example.market_follower.model.TradableCoin;
+import com.example.market_follower.repository.TradableCoinRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -13,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MarketService {
+    private final TradableCoinRepository tradableCoinRepository;
     private final Dotenv dotenv;
     private final ObjectMapper objectMapper;    // JSON 파싱
     private final RestTemplate restTemplate = new RestTemplate();   // HTTP 호출
@@ -43,10 +47,36 @@ public class MarketService {
         }
     }
 
+    private TradableCoin toEntity(TradableCoinDto dto) {
+        return TradableCoin.builder()
+                .market(dto.getMarket())
+                .koreanName(dto.getKoreanName())
+                .englishName(dto.getEnglishName())
+                .isWarning(dto.getIsWarning())
+                .isCautionPriceFluctuations(dto.getIsCautionPriceFluctuations())
+                .isCautionTradingVolumeSoaring(dto.getIsCautionTradingVolumeSoaring())
+                .isCautionDepositAmountSoaring(dto.getIsCautionDepositAmountSoaring())
+                .isCautionGlobalPriceDifferences(dto.getIsCautionGlobalPriceDifferences())
+                .isCautionConcentrationOfSmallAccounts(dto.getIsCautionConcentrationOfSmallAccounts())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
     // 추후 삭제 예정
     public void exampleKeys() {
         String accessKey = dotenv.get("API_ACCESS");
         String secretKey = dotenv.get("API_SECRET");
+    }
+
+    public void updateTradableCoinsInDb() {
+        List<TradableCoinDto> dtos = getAllTradableCoins();  // API 호출 + DTO 반환
+
+        List<TradableCoin> entities = dtos.stream()
+                .map(this::toEntity)
+                .collect(Collectors.toList());
+
+        tradableCoinRepository.saveAll(entities);
+        log.info("Updated tradable_coin table with {} entries", entities.size());
     }
 
     public List<TradableCoinDto> getAllTradableCoins() {
