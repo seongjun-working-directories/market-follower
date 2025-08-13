@@ -16,7 +16,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");    // 구독 prefix
+        config.enableSimpleBroker("/topic")
+                .setHeartbeatValue(new long[]{10000, 10000});    // 구독 prefix
         config.setApplicationDestinationPrefixes("/app");       // 발행 prefix
     }
 
