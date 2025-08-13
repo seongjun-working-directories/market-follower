@@ -19,7 +19,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // TaskScheduler 생성
         ThreadPoolTaskScheduler taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setPoolSize(1);
+        taskScheduler.setPoolSize(5);
         taskScheduler.setThreadNamePrefix("wss-heartbeat-thread-");
         taskScheduler.initialize();
 
