@@ -76,21 +76,36 @@ public class KafkaConsumerService {
             }
              */
 
+            // 1. 먼저 모든 데이터를 Redis에 저장
             for (UpbitTickerDto dto : tickers) {
                 try {
-                    // Redis 저장 (Key: market, Value: JSON)
                     String key = "upbit:ticker:" + dto.getMarket();
                     String jsonValue = objectMapper.writeValueAsString(dto);
                     redisTemplate.opsForValue().set(key, jsonValue, Duration.ofMinutes(10));
-
-                    // WebSocket으로 즉시 푸시
-                    messagingTemplate.convertAndSend("/topic/ticker/all", tickers);
-                    messagingTemplate.convertAndSend("/topic/ticker/" + dto.getMarket(), dto);
                 } catch (Exception e) {
-                    log.error("Failed processing ticker {}", dto.getMarket(), e);
+                    log.error("Failed to save ticker to Redis: {}", dto.getMarket(), e);
                 }
             }
 
+            // 2. 전체 리스트는 딱 한 번만 전송
+            try {
+                messagingTemplate.convertAndSend("/topic/ticker/all", tickers);
+                log.debug("Sent all tickers to /topic/ticker/all: {} coins", tickers.size());
+            } catch (Exception e) {
+                log.error("Failed to send all tickers via WebSocket", e);
+            }
+
+            // 3. 개별 코인 데이터도 각각 한 번씩만 전송
+            for (UpbitTickerDto dto : tickers) {
+                try {
+                    messagingTemplate.convertAndSend("/topic/ticker/" + dto.getMarket(), dto);
+                } catch (Exception e) {
+                    log.error("Failed to send individual ticker {}", dto.getMarket(), e);
+                    // 개별 코인 전송 실패해도 전체 처리는 계속
+                }
+            }
+
+            log.info("Successfully processed {} tickers", tickers.size());
         } catch (Exception e) {
             log.error("Failed to process Kafka message", e);
         }
