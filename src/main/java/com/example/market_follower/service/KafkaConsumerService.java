@@ -2,15 +2,20 @@ package com.example.market_follower.service;
 
 import com.example.market_follower.model.UpbitTicker;
 import com.example.market_follower.dto.upbit.UpbitTickerDto;
-import com.example.market_follower.repository.UpbitTickerRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
+
+// DB에 upbit_ticker를 저장하지 않음
+// import com.example.market_follower.repository.UpbitTickerRepository;
 
 @Slf4j
 @Service
@@ -18,7 +23,13 @@ import java.util.List;
 public class KafkaConsumerService {
 
     private final ObjectMapper objectMapper;
-    private final UpbitTickerRepository upbitTickerRepository;
+
+    // DB에 upbit_ticker를 저장하지 않음
+    // // private final UpbitTickerRepository upbitTickerRepository;
+
+    // 대신 Redis로 인메모리 캐시에 저장 후 Websocket으로 발송
+    private final StringRedisTemplate redisTemplate;
+    private final SimpMessagingTemplate messagingTemplate; // STOMP WebSocket 발송용
 
     @KafkaListener(topics = "upbit-ticker-topic", groupId = "upbit-group", concurrency = "3")
     public void consume(String message) {
@@ -27,6 +38,7 @@ public class KafkaConsumerService {
 
             List<UpbitTickerDto> tickers = objectMapper.readValue(message, new TypeReference<List<UpbitTickerDto>>() {});
 
+            /* DB에 upbit_ticker를 저장하지 않음
             for (UpbitTickerDto dto : tickers) {
                 log.debug("Processing ticker: {}", dto);
 
@@ -60,8 +72,23 @@ public class KafkaConsumerService {
                         .upbitTimestamp(dto.getUpbitTimestamp())
                         .build();
 
-                // DB 저장
-                upbitTickerRepository.save(entity);
+                upbitTickerRepository.save(entity); // DB에 저장
+            }
+             */
+
+            for (UpbitTickerDto dto : tickers) {
+                try {
+                    // Redis 저장 (Key: market, Value: JSON)
+                    String key = "upbit:ticker:" + dto.getMarket();
+                    String jsonValue = objectMapper.writeValueAsString(dto);
+                    redisTemplate.opsForValue().set(key, jsonValue, Duration.ofMinutes(10));
+
+                    // WebSocket으로 즉시 푸시
+                    messagingTemplate.convertAndSend("/topic/ticker/all", tickers);
+                    messagingTemplate.convertAndSend("/topic/ticker/" + dto.getMarket(), dto);
+                } catch (Exception e) {
+                    log.error("Failed processing ticker {}", dto.getMarket(), e);
+                }
             }
 
         } catch (Exception e) {
