@@ -13,8 +13,9 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*") // 또는 허용할 도메인 명시
-                        .allowedMethods("GET", "POST", "PUT", "DELETE");
+                        .allowedOriginPatterns("*") // * 패턴으로 모든 도메인 허용
+                        .allowedMethods("*")        // 모든 HTTP 메서드 허용
+                        .allowCredentials(true);    // 쿠키/인증정보 허용
             }
         };
     }
