@@ -19,8 +19,11 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth-> auth
-                        // haetlh checker는 항상 허용
+                        // health checker는 항상 허용
                         .requestMatchers("/actuator/health").permitAll()
+
+                        // WebSocket도 인증을 JwtHandshakerInterceptor에 위임
+                        .requestMatchers("/ws/**").permitAll()
 
                         // 정적 리소스는 접근을 항상 허용
                         .requestMatchers("/css/**", "/js/**", "/image/**", "/images/**", "/webjars/**").permitAll()
