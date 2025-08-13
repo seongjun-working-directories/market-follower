@@ -56,6 +56,14 @@ jobs:
             # Kafka, Zookeeper 컨테이너 시작
             docker-compose -f infra/docker-compose.kafka.yml up -d
             
+            # Kafka 토픽 생성 (컨슈머 수 3과 맞춤)
+            docker exec kafka kafka-topics.sh --create \
+              --topic upbit-ticker-topic \
+              --bootstrap-server 127.0.0.1:9092 \
+              --partitions 3 \
+              --replication-factor 1 \
+              --if-not-exists
+            
             # Redis 컨테이너 중지 및 삭제
             docker-compose -f infra/docker-compose.redis.yml down
             

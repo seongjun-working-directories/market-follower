@@ -11,6 +11,7 @@ services:
       - "2181:2181"
 
   kafka:
+    container_name: kafka
     image: wurstmeister/kafka:2.13-2.8.1
     network_mode: "host"    # 외부 IP 그대로 연결 가능
     environment:
