@@ -2,6 +2,7 @@ package com.example.market_follower.service;
 
 import com.example.market_follower.dto.upbit.TradableCoinDto;
 import com.example.market_follower.dto.upbit.UpbitMarketApiResponse;
+import com.example.market_follower.dto.upbit.UpbitTickerDto;
 import com.example.market_follower.model.TradableCoin;
 import com.example.market_follower.repository.TradableCoinRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -9,6 +10,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,7 +20,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,6 +34,7 @@ public class MarketService {
     private final Dotenv dotenv;
     private final ObjectMapper objectMapper;    // JSON 파싱
     private final RestTemplate restTemplate = new RestTemplate();   // HTTP 호출
+    private final StringRedisTemplate redisTemplate;
 
     private String uuidGenerator() {
         return UUID.randomUUID().toString();
@@ -106,6 +113,38 @@ public class MarketService {
         } catch (Exception e) {
             log.error("Failed to fetch tradable coins from Upbit API", e);
             throw new RuntimeException("Failed to fetch tradable coins", e);
+        }
+    }
+
+    public UpbitTickerDto getTicker(String market) {
+        try {
+            String key = "upbit:ticker:" + market;
+            String json = redisTemplate.opsForValue().get(key);
+            if (json == null) return null;
+            return objectMapper.readValue(json, UpbitTickerDto.class);
+        } catch(Exception e) {
+            throw new RuntimeException("Error fetching ticker for market: " + market, e);
+        }
+    }
+
+    public List<UpbitTickerDto> getAllTickers() {
+        try {
+            // Redis에서 전체 마켓 키 패턴 가져오기
+            Set<String> keys = redisTemplate.keys("upbit:ticker:*");
+
+            List<UpbitTickerDto> tickers = new ArrayList<>();
+            if (keys != null) {
+                for (String key : keys) {
+                    String json = redisTemplate.opsForValue().get(key);
+                    if (json != null) {
+                        tickers.add(objectMapper.readValue(json, UpbitTickerDto.class));
+                    }
+                }
+            }
+
+            return tickers;
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching tickers from Redis", e);
         }
     }
 }

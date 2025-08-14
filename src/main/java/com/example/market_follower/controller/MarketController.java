@@ -212,15 +212,13 @@ public class MarketController {
     )
     public ResponseEntity<UpbitTickerDto> getTicker(@PathVariable String market) throws Exception {
         try {
-            String key = "upbit:ticker:" + market;
-            String json = redisTemplate.opsForValue().get(key);
-            UpbitTickerDto dto = json != null ? objectMapper.readValue(json, UpbitTickerDto.class) : null;
+            UpbitTickerDto dto = marketService.getTicker(market);
             if (dto != null) {
                 return ResponseEntity.status(HttpStatus.OK).body(dto);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-        } catch (Exception e) {
+        }  catch (RuntimeException e) {
             log.error("Error fetching ticker for market {}", market, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -296,19 +294,9 @@ public class MarketController {
     )
     public ResponseEntity<List<UpbitTickerDto>> getAllTickers() throws Exception {
         try {
-            // Redis에서 전체 마켓 키 패턴 가져오기
-            Set<String> keys = redisTemplate.keys("upbit:ticker:*");
-            List<UpbitTickerDto> tickers = new ArrayList<>();
-            if (keys != null) {
-                for (String key : keys) {
-                    String json = redisTemplate.opsForValue().get(key);
-                    if (json != null) {
-                        tickers.add(objectMapper.readValue(json, UpbitTickerDto.class));
-                    }
-                }
-            }
+            List<UpbitTickerDto> tickers = marketService.getAllTickers();
             return ResponseEntity.status(HttpStatus.OK).body(tickers);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.error("Error fetching all tickers", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
