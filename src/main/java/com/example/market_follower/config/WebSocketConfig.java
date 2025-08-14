@@ -25,7 +25,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         // SimpleBroker에 하트비트와 스케줄러 연결
         config.enableSimpleBroker("/topic")
-                .setHeartbeatValue(new long[]{10000, 10000})
+                .setHeartbeatValue(new long[]{5000, 30000})
                 .setTaskScheduler(taskScheduler);               // 구독 prefix
 
         // 클라이언트 -> 서버로 메시지 prefix
