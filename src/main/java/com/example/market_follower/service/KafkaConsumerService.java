@@ -34,9 +34,11 @@ public class KafkaConsumerService {
     @KafkaListener(topics = "upbit-ticker-topic", groupId = "upbit-group", concurrency = "3")
     public void consume(String message) {
         try {
-            log.info("Kafka Consumer received message: {}", message);
+            //  log.info("Kafka Consumer received message: {}", message);
 
             List<UpbitTickerDto> tickers = objectMapper.readValue(message, new TypeReference<List<UpbitTickerDto>>() {});
+
+            log.info("Kafa Consumer received {} tickers", tickers.size());
 
             /* DB에 upbit_ticker를 저장하지 않음
             for (UpbitTickerDto dto : tickers) {
