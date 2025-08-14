@@ -31,10 +31,17 @@ public class WebSocketController {
             **연결 유지**
             - 서버와 클라이언트 모두 30초 이내에 heartbeat를 주고받아야 연결이 유지됩니다.
             - 클라이언트에서 `stompClient.heartbeat.outgoing = 30000` 및 `stompClient.heartbeat.incoming = 30000` 설정 권장.
-
+            
+            **절차**
+            1. Google OAuth 로그인 → Access Token 발급
+            2. `/auth/google` API로 JWT 발급
+            3. **최초 화면 로딩 시** REST API(`/market/ticker/all` 또는 `/market/ticker/{market}`)로 초기 시세 데이터를 조회
+            4. WebSocket 연결 시 URL에 `token` 파라미터로 JWT 전달
+            5. 이후 WebSocket 연결로 생성된 구독 채널을 통해 실시간 업데이트 수신
+            
             **STOMP 구독 채널**
-            - `/topic/ticker/all` : 모든 코인 시세
-            - `/topic/ticker/KRW-BTC` : 특정 코인 시세
+            - `/topic/ticker/all` : 모든 코인 시세 (List<UpbitTickerDto>)
+            - `/topic/ticker/KRW-BTC` : 특정 코인 시세 (UpbitTickerDto)
 
             **클라이언트 예시 (JavaScript)**:
             ```javascript
@@ -54,12 +61,6 @@ public class WebSocketController {
                 });
             });
             ```
-
-            **JWT 발급 후 사용 순서**
-            1. Google OAuth 로그인 → Access Token 발급
-            2. `/auth/google` API로 JWT 발급
-            3. WebSocket 연결 시 URL에 `token` 파라미터로 JWT 전달
-            4. 구독 채널에서 실시간 시세 수신
             """,
             responses = {
                     @ApiResponse(
