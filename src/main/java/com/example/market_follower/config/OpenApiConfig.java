@@ -10,7 +10,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI().info(
-                new Info().title("Market Follower - 주식 시세 스트리밍 서버")
+                new Info().title("Market Follower - 암호화폐 시세 스트리밍 서버")
                         .version("v1.0")
                         .description("Market Follower 백엔드 API 명세서")
         );
