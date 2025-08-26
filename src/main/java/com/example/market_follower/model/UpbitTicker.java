@@ -59,7 +59,7 @@ public class UpbitTicker {
     @JsonProperty("prev_closing_price")
     private double prevClosingPrice;
 
-    @Column(name = "change")
+    @Column(name = "change_direction")
     private String change;
 
     @Column(name = "change_price")

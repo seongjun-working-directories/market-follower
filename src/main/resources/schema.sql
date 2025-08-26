@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS upbit_ticker (
     trade_price DOUBLE,
     prev_closing_price DOUBLE,
 
-    change VARCHAR(255),
+    change_direction VARCHAR(255),
     change_price DOUBLE,
     change_rate DOUBLE,
     signed_change_price DOUBLE,
