@@ -77,6 +77,10 @@ jobs:
             # MySQL 컨테이너 시작 (파일 볼륨 사용)
             docker-compose -f infra/docker-compose.mysql.yml up -d
             
+            # MySQL 시작을 위해 일시 대기
+            echo "Waiting for MySQL to be ready..."
+            sleep 10  # 10초 정도, 필요 시 늘릴 수 있음
+            
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
             docker run -d --network host --name mf \
