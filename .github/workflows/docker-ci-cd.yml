@@ -74,11 +74,15 @@ jobs:
             # Redis 컨테이너 시작
             docker-compose -f infra/docker-compose.redis.yml up -d
             
+            # MySQL 컨테이너 시작 (파일 볼륨 사용)
+            docker-compose -f infra/docker-compose.mysql.yml up -d
+            
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
             docker run -d --network host --name mf \
               -e SPRING_REDIS_HOST=127.0.0.1 \
               -e SPRING_REDIS_PORT=6379 \
+              -e SPRING_PROFILES_ACTIVE=prod \
               ghcr.io/seongjun-working-directories/market-follower:latest
             
             # 사용하지 않는 이미지 정리
