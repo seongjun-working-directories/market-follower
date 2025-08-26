@@ -78,8 +78,10 @@ jobs:
             docker-compose -f infra/docker-compose.mysql.yml up -d
             
             # MySQL 시작을 위해 일시 대기
-            echo "Waiting for MySQL to be ready..."
-            sleep 10  # 10초 정도, 필요 시 늘릴 수 있음
+            until docker exec mysql mysqladmin ping -uuser -p1234 --silent; do
+              echo "Waiting for MySQL..."
+              sleep 2
+            done
             
             docker pull ghcr.io/seongjun-working-directories/market-follower:latest
             docker rm -f mf || true
