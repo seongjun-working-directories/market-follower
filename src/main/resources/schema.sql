@@ -67,3 +67,127 @@ CREATE TABLE IF NOT EXISTS upbit_ticker (
 
     upbit_timestamp BIGINT
 );
+
+-- 7일간 1시간 단위 캔들 (168개 데이터)
+CREATE TABLE upbit_candle_7d (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    unit INT NOT NULL DEFAULT 60 COMMENT '분 단위 (60분)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='7일간 1시간 단위 캔들 데이터 (168개 × 600코인 = 약 100,800개 레코드)';
+
+-- 30일간 4시간 단위 캔들 (180개 데이터)
+CREATE TABLE upbit_candle_30d (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    unit INT NOT NULL DEFAULT 240 COMMENT '분 단위 (240분)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='30일간 4시간 단위 캔들 데이터 (180개 × 600코인 = 약 108,000개 레코드)';
+
+-- 3개월간 일 단위 캔들 (90개 데이터)
+CREATE TABLE upbit_candle_3m (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    prev_closing_price DECIMAL(20,8) NULL COMMENT '전일 종가',
+    change_price DECIMAL(20,8) NULL COMMENT '전일 대비 변화 금액',
+    change_rate DECIMAL(10,8) NULL COMMENT '전일 대비 변화율',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='3개월간 일 단위 캔들 데이터 (90개 × 600코인 = 약 54,000개 레코드)';
+
+-- 1년간 일 단위 캔들 (최신 200개 + to 파라미터로 나머지 165개)
+CREATE TABLE upbit_candle_1y (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    prev_closing_price DECIMAL(20,8) NULL COMMENT '전일 종가',
+    change_price DECIMAL(20,8) NULL COMMENT '전일 대비 변화 금액',
+    change_rate DECIMAL(10,8) NULL COMMENT '전일 대비 변화율',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='1년간 일 단위 캔들 데이터 (365개 × 600코인 = 약 219,000개 레코드)';
+
+-- 5년간 주 단위 캔들 (최신 200주 + to 파라미터로 나머지 165주)
+CREATE TABLE upbit_candle_5y (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    first_day_of_period DATE NULL COMMENT '캔들 기간의 가장 첫 날',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='5년간 주 단위 캔들 데이터 (365주 × 600코인 = 약 219,000개 레코드)';
