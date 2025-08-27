@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS upbit_ticker (
 );
 
 -- 7일간 1시간 단위 캔들 (168개 데이터)
-CREATE TABLE upbit_candle_7d (
+CREATE TABLE IF NOT EXISTS upbit_candle_7d (
     id BIGINT NOT NULL AUTO_INCREMENT,
     market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
     candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
@@ -93,7 +93,7 @@ CREATE TABLE upbit_candle_7d (
   COMMENT='7일간 1시간 단위 캔들 데이터 (168개 × 600코인 = 약 100,800개 레코드)';
 
 -- 30일간 4시간 단위 캔들 (180개 데이터)
-CREATE TABLE upbit_candle_30d (
+CREATE TABLE IF NOT EXISTS upbit_candle_30d (
     id BIGINT NOT NULL AUTO_INCREMENT,
     market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
     candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
@@ -117,7 +117,7 @@ CREATE TABLE upbit_candle_30d (
   COMMENT='30일간 4시간 단위 캔들 데이터 (180개 × 600코인 = 약 108,000개 레코드)';
 
 -- 3개월간 일 단위 캔들 (90개 데이터)
-CREATE TABLE upbit_candle_3m (
+CREATE TABLE IF NOT EXISTS upbit_candle_3m (
     id BIGINT NOT NULL AUTO_INCREMENT,
     market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
     candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
@@ -143,7 +143,7 @@ CREATE TABLE upbit_candle_3m (
   COMMENT='3개월간 일 단위 캔들 데이터 (90개 × 600코인 = 약 54,000개 레코드)';
 
 -- 1년간 일 단위 캔들 (최신 200개 + to 파라미터로 나머지 165개)
-CREATE TABLE upbit_candle_1y (
+CREATE TABLE IF NOT EXISTS upbit_candle_1y (
     id BIGINT NOT NULL AUTO_INCREMENT,
     market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
     candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
@@ -169,7 +169,7 @@ CREATE TABLE upbit_candle_1y (
   COMMENT='1년간 일 단위 캔들 데이터 (365개 × 600코인 = 약 219,000개 레코드)';
 
 -- 5년간 주 단위 캔들 (최신 200주 + to 파라미터로 나머지 165주)
-CREATE TABLE upbit_candle_5y (
+CREATE TABLE IF NOT EXISTS upbit_candle_5y (
     id BIGINT NOT NULL AUTO_INCREMENT,
     market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
     candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
