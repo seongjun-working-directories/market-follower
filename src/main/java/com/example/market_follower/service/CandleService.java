@@ -461,57 +461,76 @@ public class CandleService {
     }
 
     private void update7dCandles(String coin) throws InterruptedException {
-        // 마지막 캔들 데이터의 시간 조회
-        Optional<LocalDateTime> lastDateTime = upbitCandle7dRepository
-                .findTopByMarketOrderByCandleDateTimeUtcDesc(coin)
-                .map(UpbitCandle7d::getCandleDateTimeUtc);
+        // 기존 데이터 한 번에 조회
+        Set<LocalDateTime> existingDates = upbitCandle7dRepository
+                .findCandleDateTimeUtcByMarket(coin)
+                .stream()
+                .collect(Collectors.toSet());
+
+        // 마지막 데이터 기준 URL 생성
+        Optional<LocalDateTime> lastDateTimeOpt = existingDates.stream().max(LocalDateTime::compareTo);
 
         String url;
-        if (lastDateTime.isPresent()) {
-            // 마지막 데이터 이후부터 조회
-            LocalDateTime fromDateTime = lastDateTime.get().plusHours(1);
+        if (lastDateTimeOpt.isPresent()) {
+            LocalDateTime fromDateTime = lastDateTimeOpt.get().plusHours(1);
             String fromDate = fromDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
             url = "https://api.upbit.com/v1/candles/minutes/60?market=" + coin + "&count=168&to=" + fromDate;
         } else {
-            // 데이터가 없으면 최근 168개 조회
             url = "https://api.upbit.com/v1/candles/minutes/60?market=" + coin + "&count=168";
         }
 
         UpbitCandle7dDto[] dtos = restTemplate.getForObject(url, UpbitCandle7dDto[].class);
-        if (dtos != null) {
-            for (UpbitCandle7dDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
-
-                if (!upbitCandle7dRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
-                    UpbitCandle7d entity = UpbitCandle7d.builder()
-                            .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
-                            .openingPrice(dto.getOpeningPrice())
-                            .highPrice(dto.getHighPrice())
-                            .lowPrice(dto.getLowPrice())
-                            .tradePrice(dto.getTradePrice())
-                            .timestamp(dto.getTimestamp())
-                            .candleAccTradePrice(dto.getCandleAccTradePrice())
-                            .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .unit(dto.getUnit())
-                            .build();
-                    upbitCandle7dRepository.save(entity);
-                }
-            }
-            log.info("7일 캔들 데이터 업데이트 완료 - {}", coin);
+        if (dtos == null || dtos.length == 0) {
+            log.info("7일 캔들 데이터 없음 - {}", coin);
+            return;
         }
-        Thread.sleep(150);
+
+        // 기존 데이터와 비교해서 저장할 엔티티 준비
+        List<UpbitCandle7d> saveList = new ArrayList<>();
+        for (UpbitCandle7dDto dto : dtos) {
+            LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+
+            if (!existingDates.contains(candleDateTimeUtc)) {
+                UpbitCandle7d entity = UpbitCandle7d.builder()
+                        .market(dto.getMarket())
+                        .candleDateTimeUtc(candleDateTimeUtc)
+                        .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
+                        .openingPrice(dto.getOpeningPrice())
+                        .highPrice(dto.getHighPrice())
+                        .lowPrice(dto.getLowPrice())
+                        .tradePrice(dto.getTradePrice())
+                        .timestamp(dto.getTimestamp())
+                        .candleAccTradePrice(dto.getCandleAccTradePrice())
+                        .candleAccTradeVolume(dto.getCandleAccTradeVolume())
+                        .unit(dto.getUnit())
+                        .build();
+                saveList.add(entity);
+            }
+        }
+
+        // Batch Insert
+        if (!saveList.isEmpty()) {
+            upbitCandle7dRepository.saveAll(saveList);
+            log.info("7일 캔들 데이터 업데이트 완료 - {} 코인, 총 {}개", coin, saveList.size());
+        } else {
+            log.info("신규 7일 캔들 데이터 없음 - {}", coin);
+        }
+
+        Thread.sleep(150); // API 제한 대응
     }
 
+
     private void update30dCandles(String coin) throws InterruptedException {
-        Optional<LocalDateTime> lastDateTime = upbitCandle30dRepository
-                .findTopByMarketOrderByCandleDateTimeUtcDesc(coin)
-                .map(UpbitCandle30d::getCandleDateTimeUtc);
+        Set<LocalDateTime> existingDates = upbitCandle30dRepository
+                .findCandleDateTimeUtcByMarket(coin)
+                .stream()
+                .collect(Collectors.toSet());
+
+        Optional<LocalDateTime> lastDateTimeOpt = existingDates.stream().max(LocalDateTime::compareTo);
 
         String url;
-        if (lastDateTime.isPresent()) {
-            LocalDateTime fromDateTime = lastDateTime.get().plusHours(4);
+        if (lastDateTimeOpt.isPresent()) {
+            LocalDateTime fromDateTime = lastDateTimeOpt.get().plusHours(4);
             String fromDate = fromDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
             url = "https://api.upbit.com/v1/candles/minutes/240?market=" + coin + "&count=180&to=" + fromDate;
         } else {
@@ -519,40 +538,43 @@ public class CandleService {
         }
 
         UpbitCandle30dDto[] dtos = restTemplate.getForObject(url, UpbitCandle30dDto[].class);
-        if (dtos != null) {
-            for (UpbitCandle30dDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+        if (dtos == null) return;
 
-                if (!upbitCandle30dRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
-                    UpbitCandle30d entity = UpbitCandle30d.builder()
-                            .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
-                            .openingPrice(dto.getOpeningPrice())
-                            .highPrice(dto.getHighPrice())
-                            .lowPrice(dto.getLowPrice())
-                            .tradePrice(dto.getTradePrice())
-                            .timestamp(dto.getTimestamp())
-                            .candleAccTradePrice(dto.getCandleAccTradePrice())
-                            .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .unit(dto.getUnit())
-                            .build();
-                    upbitCandle30dRepository.save(entity);
-                }
+        List<UpbitCandle30d> saveList = new ArrayList<>();
+        for (UpbitCandle30dDto dto : dtos) {
+            LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+            if (!existingDates.contains(candleDateTimeUtc)) {
+                saveList.add(UpbitCandle30d.builder()
+                        .market(dto.getMarket())
+                        .candleDateTimeUtc(candleDateTimeUtc)
+                        .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
+                        .openingPrice(dto.getOpeningPrice())
+                        .highPrice(dto.getHighPrice())
+                        .lowPrice(dto.getLowPrice())
+                        .tradePrice(dto.getTradePrice())
+                        .timestamp(dto.getTimestamp())
+                        .candleAccTradePrice(dto.getCandleAccTradePrice())
+                        .candleAccTradeVolume(dto.getCandleAccTradeVolume())
+                        .unit(dto.getUnit())
+                        .build());
             }
-            log.info("30일 캔들 데이터 업데이트 완료 - {}", coin);
         }
+        if (!saveList.isEmpty()) upbitCandle30dRepository.saveAll(saveList);
         Thread.sleep(150);
     }
 
+
     private void update3mCandles(String coin) throws InterruptedException {
-        Optional<LocalDateTime> lastDateTime = upbitCandle3mRepository
-                .findTopByMarketOrderByCandleDateTimeUtcDesc(coin)
-                .map(UpbitCandle3m::getCandleDateTimeUtc);
+        Set<LocalDateTime> existingDates = upbitCandle3mRepository
+                .findCandleDateTimeUtcByMarket(coin)
+                .stream()
+                .collect(Collectors.toSet());
+
+        Optional<LocalDateTime> lastDateTimeOpt = existingDates.stream().max(LocalDateTime::compareTo);
 
         String url;
-        if (lastDateTime.isPresent()) {
-            LocalDateTime fromDateTime = lastDateTime.get().plusDays(1);
+        if (lastDateTimeOpt.isPresent()) {
+            LocalDateTime fromDateTime = lastDateTimeOpt.get().plusDays(1);
             String fromDate = fromDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
             url = "https://api.upbit.com/v1/candles/days?market=" + coin + "&count=90&to=" + fromDate;
         } else {
@@ -560,42 +582,45 @@ public class CandleService {
         }
 
         UpbitCandle3mDto[] dtos = restTemplate.getForObject(url, UpbitCandle3mDto[].class);
-        if (dtos != null) {
-            for (UpbitCandle3mDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+        if (dtos == null) return;
 
-                if (!upbitCandle3mRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
-                    UpbitCandle3m entity = UpbitCandle3m.builder()
-                            .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
-                            .openingPrice(dto.getOpeningPrice())
-                            .highPrice(dto.getHighPrice())
-                            .lowPrice(dto.getLowPrice())
-                            .tradePrice(dto.getTradePrice())
-                            .timestamp(dto.getTimestamp())
-                            .candleAccTradePrice(dto.getCandleAccTradePrice())
-                            .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .prevClosingPrice(dto.getPrevClosingPrice())
-                            .changePrice(dto.getChangePrice())
-                            .changeRate(dto.getChangeRate())
-                            .build();
-                    upbitCandle3mRepository.save(entity);
-                }
+        List<UpbitCandle3m> saveList = new ArrayList<>();
+        for (UpbitCandle3mDto dto : dtos) {
+            LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+            if (!existingDates.contains(candleDateTimeUtc)) {
+                saveList.add(UpbitCandle3m.builder()
+                        .market(dto.getMarket())
+                        .candleDateTimeUtc(candleDateTimeUtc)
+                        .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
+                        .openingPrice(dto.getOpeningPrice())
+                        .highPrice(dto.getHighPrice())
+                        .lowPrice(dto.getLowPrice())
+                        .tradePrice(dto.getTradePrice())
+                        .timestamp(dto.getTimestamp())
+                        .candleAccTradePrice(dto.getCandleAccTradePrice())
+                        .candleAccTradeVolume(dto.getCandleAccTradeVolume())
+                        .prevClosingPrice(dto.getPrevClosingPrice())
+                        .changePrice(dto.getChangePrice())
+                        .changeRate(dto.getChangeRate())
+                        .build());
             }
-            log.info("3달 캔들 데이터 업데이트 완료 - {}", coin);
         }
+        if (!saveList.isEmpty()) upbitCandle3mRepository.saveAll(saveList);
         Thread.sleep(150);
     }
 
+
     private void update1yCandles(String coin) throws InterruptedException {
-        Optional<LocalDateTime> lastDateTime = upbitCandle1yRepository
-                .findTopByMarketOrderByCandleDateTimeUtcDesc(coin)
-                .map(UpbitCandle1y::getCandleDateTimeUtc);
+        Set<LocalDateTime> existingDates = upbitCandle1yRepository
+                .findCandleDateTimeUtcByMarket(coin)
+                .stream()
+                .collect(Collectors.toSet());
+
+        Optional<LocalDateTime> lastDateTimeOpt = existingDates.stream().max(LocalDateTime::compareTo);
 
         String url;
-        if (lastDateTime.isPresent()) {
-            LocalDateTime fromDateTime = lastDateTime.get().plusDays(1);
+        if (lastDateTimeOpt.isPresent()) {
+            LocalDateTime fromDateTime = lastDateTimeOpt.get().plusDays(1);
             String fromDate = fromDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
             url = "https://api.upbit.com/v1/candles/days?market=" + coin + "&count=365&to=" + fromDate;
         } else {
@@ -603,48 +628,45 @@ public class CandleService {
         }
 
         UpbitCandle1yDto[] dtos = restTemplate.getForObject(url, UpbitCandle1yDto[].class);
-        if (dtos != null) {
-            List<UpbitCandle1y> entities = new ArrayList<>();
+        if (dtos == null) return;
 
-            for (UpbitCandle1yDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
-
-                if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
-                    UpbitCandle1y entity = UpbitCandle1y.builder()
-                            .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
-                            .openingPrice(dto.getOpeningPrice())
-                            .highPrice(dto.getHighPrice())
-                            .lowPrice(dto.getLowPrice())
-                            .tradePrice(dto.getTradePrice())
-                            .timestamp(dto.getTimestamp())
-                            .candleAccTradePrice(dto.getCandleAccTradePrice())
-                            .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .prevClosingPrice(dto.getPrevClosingPrice())
-                            .changePrice(dto.getChangePrice())
-                            .changeRate(dto.getChangeRate())
-                            .build();
-                    entities.add(entity);
-                }
-            }
-
-            if (!entities.isEmpty()) {
-                upbitCandle1yRepository.saveAll(entities);
-                log.info("1년 캔들 데이터 업데이트 완료 - {} 코인, 총 {}일", coin, entities.size());
+        List<UpbitCandle1y> saveList = new ArrayList<>();
+        for (UpbitCandle1yDto dto : dtos) {
+            LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+            if (!existingDates.contains(candleDateTimeUtc)) {
+                saveList.add(UpbitCandle1y.builder()
+                        .market(dto.getMarket())
+                        .candleDateTimeUtc(candleDateTimeUtc)
+                        .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
+                        .openingPrice(dto.getOpeningPrice())
+                        .highPrice(dto.getHighPrice())
+                        .lowPrice(dto.getLowPrice())
+                        .tradePrice(dto.getTradePrice())
+                        .timestamp(dto.getTimestamp())
+                        .candleAccTradePrice(dto.getCandleAccTradePrice())
+                        .candleAccTradeVolume(dto.getCandleAccTradeVolume())
+                        .prevClosingPrice(dto.getPrevClosingPrice())
+                        .changePrice(dto.getChangePrice())
+                        .changeRate(dto.getChangeRate())
+                        .build());
             }
         }
+        if (!saveList.isEmpty()) upbitCandle1yRepository.saveAll(saveList);
         Thread.sleep(150);
     }
 
+
     private void update5yCandles(String coin) throws InterruptedException {
-        Optional<LocalDateTime> lastDateTime = upbitCandle5yRepository
-                .findTopByMarketOrderByCandleDateTimeUtcDesc(coin)
-                .map(UpbitCandle5y::getCandleDateTimeUtc);
+        Set<LocalDateTime> existingDates = upbitCandle5yRepository
+                .findCandleDateTimeUtcByMarket(coin)
+                .stream()
+                .collect(Collectors.toSet());
+
+        Optional<LocalDateTime> lastDateTimeOpt = existingDates.stream().max(LocalDateTime::compareTo);
 
         String url;
-        if (lastDateTime.isPresent()) {
-            LocalDateTime fromDateTime = lastDateTime.get().plusDays(7);
+        if (lastDateTimeOpt.isPresent()) {
+            LocalDateTime fromDateTime = lastDateTimeOpt.get().plusDays(7);
             String fromDate = fromDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
             url = "https://api.upbit.com/v1/candles/weeks?market=" + coin + "&count=260&to=" + fromDate;
         } else {
@@ -652,35 +674,28 @@ public class CandleService {
         }
 
         UpbitCandle5yDto[] dtos = restTemplate.getForObject(url, UpbitCandle5yDto[].class);
-        if (dtos != null) {
-            List<UpbitCandle5y> entities = new ArrayList<>();
+        if (dtos == null) return;
 
-            for (UpbitCandle5yDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
-
-                if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
-                    UpbitCandle5y entity = UpbitCandle5y.builder()
-                            .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
-                            .openingPrice(dto.getOpeningPrice())
-                            .highPrice(dto.getHighPrice())
-                            .lowPrice(dto.getLowPrice())
-                            .tradePrice(dto.getTradePrice())
-                            .timestamp(dto.getTimestamp())
-                            .candleAccTradePrice(dto.getCandleAccTradePrice())
-                            .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .firstDayOfPeriod(dto.getFirstDayOfPeriod())
-                            .build();
-                    entities.add(entity);
-                }
-            }
-
-            if (!entities.isEmpty()) {
-                upbitCandle5yRepository.saveAll(entities);
-                log.info("5년 캔들 데이터 업데이트 완료 - {} 코인, 총 {}주", coin, entities.size());
+        List<UpbitCandle5y> saveList = new ArrayList<>();
+        for (UpbitCandle5yDto dto : dtos) {
+            LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+            if (!existingDates.contains(candleDateTimeUtc)) {
+                saveList.add(UpbitCandle5y.builder()
+                        .market(dto.getMarket())
+                        .candleDateTimeUtc(candleDateTimeUtc)
+                        .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
+                        .openingPrice(dto.getOpeningPrice())
+                        .highPrice(dto.getHighPrice())
+                        .lowPrice(dto.getLowPrice())
+                        .tradePrice(dto.getTradePrice())
+                        .timestamp(dto.getTimestamp())
+                        .candleAccTradePrice(dto.getCandleAccTradePrice())
+                        .candleAccTradeVolume(dto.getCandleAccTradeVolume())
+                        .firstDayOfPeriod(dto.getFirstDayOfPeriod())
+                        .build());
             }
         }
+        if (!saveList.isEmpty()) upbitCandle5yRepository.saveAll(saveList);
         Thread.sleep(150);
     }
 }

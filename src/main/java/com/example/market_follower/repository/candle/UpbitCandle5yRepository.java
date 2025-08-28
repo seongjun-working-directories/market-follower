@@ -26,5 +26,8 @@ public interface UpbitCandle5yRepository extends JpaRepository<UpbitCandle5y, Lo
 
     Optional<UpbitCandle5y> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
 
+    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle5y c WHERE c.market = :market")
+    List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
+
     List<UpbitCandle5y> findByMarket(String market);
 }

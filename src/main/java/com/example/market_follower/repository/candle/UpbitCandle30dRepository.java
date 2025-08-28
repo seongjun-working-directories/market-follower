@@ -25,4 +25,7 @@ public interface UpbitCandle30dRepository extends JpaRepository<UpbitCandle30d, 
     void deleteOlderThan30d(@Param("threshold") LocalDateTime threshold);
 
     Optional<UpbitCandle30d> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
+
+    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle30d c WHERE c.market = :market")
+    List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
 }
