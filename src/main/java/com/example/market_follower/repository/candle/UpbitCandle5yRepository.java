@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface UpbitCandle5yRepository extends JpaRepository<UpbitCandle5y, Long> {
     boolean existsByMarketAndCandleDateTimeUtc(String market, LocalDateTime candleDateTimeUtc);
@@ -17,4 +18,11 @@ public interface UpbitCandle5yRepository extends JpaRepository<UpbitCandle5y, Lo
     @Transactional
     @Query("DELETE FROM UpbitCandle7d c WHERE c.market NOT IN :markets")
     void deleteByMarketNotIn(@Param("markets") List<String> markets);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM UpbitCandle5y c WHERE c.candleDateTimeUtc < :threshold")
+    void deleteOlderThan5y(@Param("threshold") LocalDateTime threshold);
+
+    Optional<UpbitCandle5y> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
 }
