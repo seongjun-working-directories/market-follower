@@ -49,45 +49,50 @@ public class CandleService {
     }
 
     @Transactional
-    public void initializeCandles() {
+    public void initializeCandles(String type) {
         List<String> coins = marketService.getAllTradableCoins().stream()
                 .map(TradableCoinDto::getMarket)
                 .toList();
 
         try {
             int count = 1;
-            for (String coin : coins) {
-                log.info("7일 캔들 - {}/{}", count, coins.size());
-                process7d(coin);
-                count += 1;
-            }
 
-            count = 1;
-            for (String coin : coins) {
-                log.info("30일 캔들 - {}/{}", count, coins.size());
-                process30d(coin);
-                count += 1;
-            }
-
-            count = 1;
-            for (String coin : coins) {
-                log.info("3달 캔들 - {}/{}", count, coins.size());
-                process3m(coin);
-                count += 1;
-            }
-
-            count = 1;
-            for (String coin : coins) {
-                log.info("1년 캔들 - {}/{}", count, coins.size());
-                process1y(coin);
-                count += 1;
-            }
-
-            count = 1;
-            for (String coin : coins) {
-                log.info("5년 캔들 - {}/{}", count, coins.size());
-                process5y(coin);
-                count += 1;
+            switch (type) {
+                case "A":
+                    for (String coin : coins) {
+                        log.info("7일 캔들 - {}/{}", count, coins.size());
+                        process7d(coin);
+                        count += 1;
+                    }
+                    break;
+                case "B":
+                    for (String coin : coins) {
+                        log.info("30일 캔들 - {}/{}", count, coins.size());
+                        process30d(coin);
+                        count += 1;
+                    }
+                    break;
+                case "C":
+                    for (String coin : coins) {
+                        log.info("3달 캔들 - {}/{}", count, coins.size());
+                        process3m(coin);
+                        count += 1;
+                    }
+                    break;
+                case "D":
+                    for (String coin : coins) {
+                        log.info("1년 캔들 - {}/{}", count, coins.size());
+                        process1y(coin);
+                        count += 1;
+                    }
+                    break;
+                case "E":
+                    for (String coin : coins) {
+                        log.info("5년 캔들 - {}/{}", count, coins.size());
+                        process5y(coin);
+                        count += 1;
+                    }
+                    break;
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
