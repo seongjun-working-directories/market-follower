@@ -139,4 +139,15 @@ public class CandleController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+
+    @PutMapping("/manual/daily/update")
+    public ResponseEntity<Void> updateCandleDailyInManual() {
+        try {
+            candleService.updateDailyCandleData();
+            return ResponseEntity.status(HttpStatus.OK).body(null);
+        }  catch (Exception e) {
+            log.error("Error manually updating candle data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }
