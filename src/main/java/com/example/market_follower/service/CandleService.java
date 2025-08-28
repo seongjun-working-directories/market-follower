@@ -150,7 +150,6 @@ public class CandleService {
                             .timestamp(dto.getTimestamp())
                             .candleAccTradePrice(dto.getCandleAccTradePrice())
                             .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .unit(dto.getUnit())
                             .prevClosingPrice(dto.getPrevClosingPrice())
                             .changePrice(dto.getChangePrice())
                             .changeRate(dto.getChangeRate())
@@ -188,7 +187,6 @@ public class CandleService {
                             .timestamp(dto.getTimestamp())
                             .candleAccTradePrice(dto.getCandleAccTradePrice())
                             .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .unit(dto.getUnit())
                             .prevClosingPrice(dto.getPrevClosingPrice())
                             .changePrice(dto.getChangePrice())
                             .changeRate(dto.getChangeRate())
@@ -224,7 +222,6 @@ public class CandleService {
                                 .timestamp(dto.getTimestamp())
                                 .candleAccTradePrice(dto.getCandleAccTradePrice())
                                 .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                                .unit(dto.getUnit())
                                 .prevClosingPrice(dto.getPrevClosingPrice())
                                 .changePrice(dto.getChangePrice())
                                 .changeRate(dto.getChangeRate())
@@ -268,7 +265,6 @@ public class CandleService {
                             .timestamp(dto.getTimestamp())
                             .candleAccTradePrice(dto.getCandleAccTradePrice())
                             .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                            .unit(dto.getUnit())
                             .firstDayOfPeriod(dto.getFirstDayOfPeriod())
                             .build();
                     entities.add(entity);
@@ -302,7 +298,6 @@ public class CandleService {
                                 .timestamp(dto.getTimestamp())
                                 .candleAccTradePrice(dto.getCandleAccTradePrice())
                                 .candleAccTradeVolume(dto.getCandleAccTradeVolume())
-                                .unit(dto.getUnit())
                                 .firstDayOfPeriod(dto.getFirstDayOfPeriod())
                                 .build();
                         entities.add(entity);

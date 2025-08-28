@@ -49,9 +49,6 @@ public abstract class BaseCandle {
     @Column(name = "candle_acc_trade_volume", nullable = false, precision = 30, scale = 8)
     private BigDecimal candleAccTradeVolume;
 
-    @Column(name = "unit", nullable = false)
-    private Integer unit;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

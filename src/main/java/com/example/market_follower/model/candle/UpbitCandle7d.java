@@ -1,5 +1,6 @@
 package com.example.market_follower.model.candle;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -14,7 +15,9 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
 public class UpbitCandle7d extends BaseCandle {
-
+    @Column(name = "unit", nullable = false)
+    private Integer unit;
 }
