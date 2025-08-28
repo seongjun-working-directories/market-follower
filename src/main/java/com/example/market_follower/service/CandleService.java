@@ -133,7 +133,7 @@ public class CandleService {
             }
             log.info("CandleService에서 캔들 데이터(7일) 초기 세팅 완료 - {}", coin);
         }
-        Thread.sleep(200);
+        Thread.sleep(150);
     }
 
     private void process30d(String coin) throws InterruptedException {
@@ -163,7 +163,7 @@ public class CandleService {
             }
             log.info("CandleService에서 캔들 데이터(30일) 초기 세팅 완료 - {}", coin);
         }
-        Thread.sleep(200);
+        Thread.sleep(150);
     }
 
     private void process3m(String coin) throws InterruptedException {
@@ -195,7 +195,7 @@ public class CandleService {
             }
             log.info("CandleService에서 캔들 데이터(3달) 초기 세팅 완료 - {}", coin);
         }
-        Thread.sleep(200);
+        Thread.sleep(150);
     }
 
     private void process1y(String coin) throws InterruptedException {
@@ -230,7 +230,7 @@ public class CandleService {
                     entities.add(entity);
                 }
             }
-            Thread.sleep(200); // API 요청 간격
+            Thread.sleep(150); // API 요청 간격
 
             // 두 번째 요청: 나머지 165일
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
@@ -273,7 +273,7 @@ public class CandleService {
                 log.info("CandleService에서 캔들 데이터(1년) 초기 세팅 완료 - {} 코인, 총 {}일", coin, entities.size());
             }
         }
-        Thread.sleep(200);
+        Thread.sleep(150);
     }
 
     private void process5y(String coin) throws InterruptedException {
@@ -306,7 +306,7 @@ public class CandleService {
                     entities.add(entity);
                 }
             }
-            Thread.sleep(200);
+            Thread.sleep(150);
 
             // 두 번째 요청: 나머지 60주
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
@@ -347,7 +347,7 @@ public class CandleService {
                 log.info("CandleService에서 캔들 데이터(5년) 초기 세팅 완료 - {} 코인, 총 {}주", coin, entities.size());
             }
         }
-        Thread.sleep(200);
+        Thread.sleep(150);
     }
 
     @Transactional
