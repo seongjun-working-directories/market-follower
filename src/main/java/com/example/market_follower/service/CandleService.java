@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CandleService {
     private final ObjectMapper objectMapper;     // JSON 파싱
-    private final RestTemplate restTemplate;     // HTTP 호출
+    private final RestTemplate restTemplate = new RestTemplate();     // HTTP 호출
     private final UpbitCandle7dRepository upbitCandle7dRepository;
     private final UpbitCandle30dRepository upbitCandle30dRepository;
     private final UpbitCandle3mRepository upbitCandle3mRepository;
