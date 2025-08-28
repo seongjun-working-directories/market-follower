@@ -17,6 +17,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -203,17 +205,24 @@ public class CandleService {
     private void process1y(String coin) throws InterruptedException {
         List<UpbitCandle1y> entities = new ArrayList<>();
 
+        // 기존 데이터 한 번에 조회해서 메모리에 캐싱
+        Set<String> existingKeys = upbitCandle1yRepository
+                .findByMarket(coin)
+                .stream()
+                .map(candle -> coin + "_" + candle.getCandleDateTimeUtc().toString())
+                .collect(Collectors.toSet());
+
         // 첫 번째 요청: 최신 200일
         String url1 = "https://api.upbit.com/v1/candles/days?market=" + coin + "&count=200";
         UpbitCandle1yDto[] dtos1 = restTemplate.getForObject(url1, UpbitCandle1yDto[].class);
 
         if (dtos1 != null && dtos1.length > 0) {
-            // 첫 번째 배치 처리
+            // 첫 번째 배치 처리 - 메모리 기반 중복체크
             for (UpbitCandle1yDto dto : dtos1) {
                 LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+                String key = coin + "_" + candleDateTimeUtc.toString();
 
-                // 중복 체크 (선택사항 → 필수로 변경)
-                if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
+                if (!existingKeys.contains(key)) {
                     UpbitCandle1y entity = UpbitCandle1y.builder()
                             .market(dto.getMarket())
                             .candleDateTimeUtc(candleDateTimeUtc)
@@ -230,9 +239,10 @@ public class CandleService {
                             .changeRate(dto.getChangeRate())
                             .build();
                     entities.add(entity);
+                    existingKeys.add(key); // 메모리 캐시 업데이트
                 }
             }
-            Thread.sleep(150); // API 요청 간격
+            Thread.sleep(150);
 
             // 두 번째 요청: 나머지 165일
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
@@ -244,11 +254,11 @@ public class CandleService {
             UpbitCandle1yDto[] dtos2 = restTemplate.getForObject(url2, UpbitCandle1yDto[].class);
 
             if (dtos2 != null) {
-                // 두 번째 배치 처리
                 for (UpbitCandle1yDto dto : dtos2) {
                     LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+                    String key = coin + "_" + candleDateTimeUtc.toString();
 
-                    if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
+                    if (!existingKeys.contains(key)) {
                         UpbitCandle1y entity = UpbitCandle1y.builder()
                                 .market(dto.getMarket())
                                 .candleDateTimeUtc(candleDateTimeUtc)
@@ -265,13 +275,18 @@ public class CandleService {
                                 .changeRate(dto.getChangeRate())
                                 .build();
                         entities.add(entity);
+                        existingKeys.add(key);
                     }
                 }
             }
 
-            // 배치로 한 번에 저장 (성능 향상)
+            // 배치 크기 제한해서 저장 (메모리 절약)
             if (!entities.isEmpty()) {
-                upbitCandle1yRepository.saveAll(entities);
+                int batchSize = 100;
+                for (int i = 0; i < entities.size(); i += batchSize) {
+                    int end = Math.min(i + batchSize, entities.size());
+                    upbitCandle1yRepository.saveAll(entities.subList(i, end));
+                }
                 log.info("CandleService에서 캔들 데이터(1년) 초기 세팅 완료 - {} 코인, 총 {}일", coin, entities.size());
             }
         }
@@ -281,17 +296,22 @@ public class CandleService {
     private void process5y(String coin) throws InterruptedException {
         List<UpbitCandle5y> entities = new ArrayList<>();
 
-        // 첫 번째 요청: 최신 200주
+        // 5년 데이터도 동일하게 메모리 캐싱
+        Set<String> existingKeys = upbitCandle5yRepository
+                .findByMarket(coin)
+                .stream()
+                .map(candle -> coin + "_" + candle.getCandleDateTimeUtc().toString())
+                .collect(Collectors.toSet());
+
         String url1 = "https://api.upbit.com/v1/candles/weeks?market=" + coin + "&count=200";
         UpbitCandle5yDto[] dtos1 = restTemplate.getForObject(url1, UpbitCandle5yDto[].class);
 
         if (dtos1 != null && dtos1.length > 0) {
-            // 첫 번째 배치 처리
             for (UpbitCandle5yDto dto : dtos1) {
                 LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+                String key = coin + "_" + candleDateTimeUtc.toString();
 
-                // 중복 체크 추가
-                if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
+                if (!existingKeys.contains(key)) {
                     UpbitCandle5y entity = UpbitCandle5y.builder()
                             .market(dto.getMarket())
                             .candleDateTimeUtc(candleDateTimeUtc)
@@ -306,11 +326,11 @@ public class CandleService {
                             .firstDayOfPeriod(dto.getFirstDayOfPeriod())
                             .build();
                     entities.add(entity);
+                    existingKeys.add(key);
                 }
             }
             Thread.sleep(150);
 
-            // 두 번째 요청: 나머지 60주
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
             LocalDateTime lastDateTime = parseDateTime(lastDateTimeUtc);
             LocalDateTime beforeDateTime = lastDateTime.minusDays(7);
@@ -320,11 +340,11 @@ public class CandleService {
             UpbitCandle5yDto[] dtos2 = restTemplate.getForObject(url2, UpbitCandle5yDto[].class);
 
             if (dtos2 != null) {
-                // 두 번째 배치 처리
                 for (UpbitCandle5yDto dto : dtos2) {
                     LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
+                    String key = coin + "_" + candleDateTimeUtc.toString();
 
-                    if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
+                    if (!existingKeys.contains(key)) {
                         UpbitCandle5y entity = UpbitCandle5y.builder()
                                 .market(dto.getMarket())
                                 .candleDateTimeUtc(candleDateTimeUtc)
@@ -339,13 +359,18 @@ public class CandleService {
                                 .firstDayOfPeriod(dto.getFirstDayOfPeriod())
                                 .build();
                         entities.add(entity);
+                        existingKeys.add(key);
                     }
                 }
             }
 
-            // 배치 저장
+            // 배치 크기 제한해서 저장
             if (!entities.isEmpty()) {
-                upbitCandle5yRepository.saveAll(entities);
+                int batchSize = 100;
+                for (int i = 0; i < entities.size(); i += batchSize) {
+                    int end = Math.min(i + batchSize, entities.size());
+                    upbitCandle5yRepository.saveAll(entities.subList(i, end));
+                }
                 log.info("CandleService에서 캔들 데이터(5년) 초기 세팅 완료 - {} 코인, 총 {}주", coin, entities.size());
             }
         }
