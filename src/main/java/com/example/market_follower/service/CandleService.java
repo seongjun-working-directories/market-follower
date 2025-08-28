@@ -39,24 +39,39 @@ public class CandleService {
                 .toList();
 
         try {
+            int count = 1;
             for (String coin : coins) {
+                log.info("7일 캔들 - {}/{}", count, coins.size());
                 process7d(coin);
+                count += 1;
             }
 
+            count = 1;
             for (String coin : coins) {
+                log.info("30일 캔들 - {}/{}", count, coins.size());
                 process30d(coin);
+                count += 1;
             }
 
+            count = 1;
             for (String coin : coins) {
+                log.info("3달 캔들 - {}/{}", count, coins.size());
                 process3m(coin);
+                count += 1;
             }
 
+            count = 1;
             for (String coin : coins) {
+                log.info("1년 캔들 - {}/{}", count, coins.size());
                 process1y(coin);
+                count += 1;
             }
 
+            count = 1;
             for (String coin : coins) {
+                log.info("5년 캔들 - {}/{}", count, coins.size());
                 process5y(coin);
+                count += 1;
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
