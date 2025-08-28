@@ -107,6 +107,44 @@ public class MarketController {
     }
 
     @GetMapping("/update")
+    @Operation(
+            summary = "거래 가능한 코인 목록 업데이트",
+            description = """
+            업비트 API에서 최신 거래 가능한 코인 목록을 가져와 데이터베이스를 업데이트합니다.
+            새로운 코인은 추가하고, 거래 중단된 코인은 자동으로 삭제됩니다.
+            
+            **처리 과정:**
+            1. 업비트 API에서 최신 거래 가능한 코인 목록 조회
+            2. 데이터베이스에 새로운 코인 정보 저장 (saveAll)
+            3. API 응답에 없는 기존 코인 데이터 삭제 (deleteByMarketNotIn)
+            """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "거래 가능한 코인 목록 업데이트 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "업데이트 성공",
+                                            summary = "코인 목록 업데이트 완료",
+                                            description = "데이터베이스의 거래 가능한 코인 목록이 최신 정보로 업데이트됨"
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "서버 내부 오류",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "서버 오류",
+                                            summary = "코인 목록 업데이트 중 오류",
+                                            description = "업비트 API 호출 또는 데이터베이스 업데이트 중 서버에서 오류가 발생한 경우"
+                                    )
+                            )
+                    )
+            }
+    )
     public ResponseEntity<Void> updateTradableCoinList() {
         try {
             marketService.updateTradableCoinsInDb();
