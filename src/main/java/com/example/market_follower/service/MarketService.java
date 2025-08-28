@@ -8,6 +8,7 @@ import com.example.market_follower.repository.TradableCoinRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.cdimascio.dotenv.Dotenv;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -75,6 +76,7 @@ public class MarketService {
         String secretKey = dotenv.get("API_SECRET");
     }
 
+    @Transactional
     public void updateTradableCoinsInDb() {
         List<TradableCoinDto> dtos = getAllTradableCoins();  // API 호출 + DTO 반환
 
@@ -84,6 +86,13 @@ public class MarketService {
 
         tradableCoinRepository.saveAll(entities);
         log.info("Updated tradable_coin table with {} entries", entities.size());
+
+        List<String> dtoMarkets = dtos.stream()
+            .map(TradableCoinDto::getMarket)
+            .toList();
+        
+        tradableCoinRepository.deleteByMarketNotIn(dtoMarkets);
+        log.info("Deleted tradable_coin entries not in the latest API response");
     }
 
     public List<TradableCoinDto> getAllTradableCoins() {
