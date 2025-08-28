@@ -559,7 +559,15 @@ public class CandleService {
                         .build());
             }
         }
-        if (!saveList.isEmpty()) upbitCandle30dRepository.saveAll(saveList);
+
+        // Batch Insert
+        if (!saveList.isEmpty()) {
+            upbitCandle30dRepository.saveAll(saveList);
+            log.info("30일 캔들 데이터 업데이트 완료 - {} 코인, 총 {}개", coin, saveList.size());
+        } else {
+            log.info("신규 30일 캔들 데이터 없음 - {}", coin);
+        }
+
         Thread.sleep(150);
     }
 
@@ -605,7 +613,15 @@ public class CandleService {
                         .build());
             }
         }
-        if (!saveList.isEmpty()) upbitCandle3mRepository.saveAll(saveList);
+
+        // Batch Insert
+        if (!saveList.isEmpty()) {
+            upbitCandle3mRepository.saveAll(saveList);
+            log.info("3달 캔들 데이터 업데이트 완료 - {} 코인, 총 {}개", coin, saveList.size());
+        } else {
+            log.info("신규 3달 캔들 데이터 없음 - {}", coin);
+        }
+
         Thread.sleep(150);
     }
 
@@ -651,7 +667,15 @@ public class CandleService {
                         .build());
             }
         }
-        if (!saveList.isEmpty()) upbitCandle1yRepository.saveAll(saveList);
+
+        // Batch Insert
+        if (!saveList.isEmpty()) {
+            upbitCandle1yRepository.saveAll(saveList);
+            log.info("1년 캔들 데이터 업데이트 완료 - {} 코인, 총 {}개", coin, saveList.size());
+        } else {
+            log.info("신규 1년 캔들 데이터 없음 - {}", coin);
+        }
+
         Thread.sleep(150);
     }
 
@@ -695,7 +719,15 @@ public class CandleService {
                         .build());
             }
         }
-        if (!saveList.isEmpty()) upbitCandle5yRepository.saveAll(saveList);
+
+        // Batch Insert
+        if (!saveList.isEmpty()) {
+            upbitCandle5yRepository.saveAll(saveList);
+            log.info("5년 캔들 데이터 업데이트 완료 - {} 코인, 총 {}개", coin, saveList.size());
+        } else {
+            log.info("신규 5년 캔들 데이터 없음 - {}", coin);
+        }
+
         Thread.sleep(150);
     }
 }
