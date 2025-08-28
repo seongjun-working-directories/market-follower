@@ -29,8 +29,24 @@ public class CandleService {
     private final UpbitCandle5yRepository upbitCandle5yRepository;
     private final MarketService marketService;
 
-    // 기존 yyyy-MM-dd'T'HH:mm:ss → ISO_DATE_TIME 으로 변경 (밀리초/타임존 포함 대응)
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+    private LocalDateTime parseDateTime(String dateTimeString) {
+        if (dateTimeString == null) {
+            return null;
+        }
+
+        try {
+            // ISO_DATE_TIME 형식 시도
+            return LocalDateTime.parse(dateTimeString, DateTimeFormatter.ISO_DATE_TIME);
+        } catch (Exception e1) {
+            try {
+                // 기본 형식 시도
+                return LocalDateTime.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+            } catch (Exception e2) {
+                log.error("Failed to parse datetime: {}", dateTimeString);
+                throw new RuntimeException("Cannot parse datetime: " + dateTimeString, e2);
+            }
+        }
+    }
 
     @Transactional
     public void initializeCandles() {
@@ -90,14 +106,14 @@ public class CandleService {
         UpbitCandle7dDto[] dtos = restTemplate.getForObject(url, UpbitCandle7dDto[].class);
         if (dtos != null) {
             for (UpbitCandle7dDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
                 // 중복 체크 추가
                 if (!upbitCandle7dRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                     UpbitCandle7d entity = UpbitCandle7d.builder()
                             .market(dto.getMarket())
                             .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                             .openingPrice(dto.getOpeningPrice())
                             .highPrice(dto.getHighPrice())
                             .lowPrice(dto.getLowPrice())
@@ -120,14 +136,14 @@ public class CandleService {
         UpbitCandle30dDto[] dtos = restTemplate.getForObject(url, UpbitCandle30dDto[].class);
         if (dtos != null) {
             for (UpbitCandle30dDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
                 // 중복 체크 추가
                 if (!upbitCandle30dRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                     UpbitCandle30d entity = UpbitCandle30d.builder()
                             .market(dto.getMarket())
                             .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                             .openingPrice(dto.getOpeningPrice())
                             .highPrice(dto.getHighPrice())
                             .lowPrice(dto.getLowPrice())
@@ -150,14 +166,14 @@ public class CandleService {
         UpbitCandle3mDto[] dtos = restTemplate.getForObject(url, UpbitCandle3mDto[].class);
         if (dtos != null) {
             for (UpbitCandle3mDto dto : dtos) {
-                LocalDateTime candleDateTimeUtc = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
                 // 중복 체크 추가
                 if (!upbitCandle3mRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                     UpbitCandle3m entity = UpbitCandle3m.builder()
                             .market(dto.getMarket())
                             .candleDateTimeUtc(candleDateTimeUtc)
-                            .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                             .openingPrice(dto.getOpeningPrice())
                             .highPrice(dto.getHighPrice())
                             .lowPrice(dto.getLowPrice())
@@ -187,14 +203,14 @@ public class CandleService {
         if (dtos1 != null && dtos1.length > 0) {
             // 첫 번째 배치 처리
             for (UpbitCandle1yDto dto : dtos1) {
-                LocalDateTime candleDateTime = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
                 // 중복 체크 (선택사항 → 필수로 변경)
-                if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTime)) {
+                if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                     UpbitCandle1y entity = UpbitCandle1y.builder()
                             .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTime)
-                            .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                            .candleDateTimeUtc(candleDateTimeUtc)
+                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                             .openingPrice(dto.getOpeningPrice())
                             .highPrice(dto.getHighPrice())
                             .lowPrice(dto.getLowPrice())
@@ -213,9 +229,9 @@ public class CandleService {
 
             // 두 번째 요청: 나머지 165일
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
-            LocalDateTime lastDateTime = LocalDateTime.parse(lastDateTimeUtc, DATE_TIME_FORMATTER);
+            LocalDateTime lastDateTime = parseDateTime(lastDateTimeUtc);
             LocalDateTime beforeDateTime = lastDateTime.minusDays(1);
-            String beforeDate = beforeDateTime.format(DATE_TIME_FORMATTER);
+            String beforeDate = beforeDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
 
             String url2 = "https://api.upbit.com/v1/candles/days?market=" + coin + "&count=165&to=" + beforeDate;
             UpbitCandle1yDto[] dtos2 = restTemplate.getForObject(url2, UpbitCandle1yDto[].class);
@@ -223,13 +239,13 @@ public class CandleService {
             if (dtos2 != null) {
                 // 두 번째 배치 처리
                 for (UpbitCandle1yDto dto : dtos2) {
-                    LocalDateTime candleDateTime = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                    LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
-                    if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTime)) {
+                    if (!upbitCandle1yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                         UpbitCandle1y entity = UpbitCandle1y.builder()
                                 .market(dto.getMarket())
-                                .candleDateTimeUtc(candleDateTime)
-                                .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                                .candleDateTimeUtc(candleDateTimeUtc)
+                                .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                                 .openingPrice(dto.getOpeningPrice())
                                 .highPrice(dto.getHighPrice())
                                 .lowPrice(dto.getLowPrice())
@@ -265,14 +281,14 @@ public class CandleService {
         if (dtos1 != null && dtos1.length > 0) {
             // 첫 번째 배치 처리
             for (UpbitCandle5yDto dto : dtos1) {
-                LocalDateTime candleDateTime = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
                 // 중복 체크 추가
-                if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTime)) {
+                if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                     UpbitCandle5y entity = UpbitCandle5y.builder()
                             .market(dto.getMarket())
-                            .candleDateTimeUtc(candleDateTime)
-                            .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                            .candleDateTimeUtc(candleDateTimeUtc)
+                            .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                             .openingPrice(dto.getOpeningPrice())
                             .highPrice(dto.getHighPrice())
                             .lowPrice(dto.getLowPrice())
@@ -289,9 +305,9 @@ public class CandleService {
 
             // 두 번째 요청: 나머지 60주
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
-            LocalDateTime lastDateTime = LocalDateTime.parse(lastDateTimeUtc, DATE_TIME_FORMATTER);
+            LocalDateTime lastDateTime = parseDateTime(lastDateTimeUtc);
             LocalDateTime beforeDateTime = lastDateTime.minusDays(7);
-            String beforeDate = beforeDateTime.format(DATE_TIME_FORMATTER);
+            String beforeDate = beforeDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
 
             String url2 = "https://api.upbit.com/v1/candles/weeks?market=" + coin + "&count=60&to=" + beforeDate;
             UpbitCandle5yDto[] dtos2 = restTemplate.getForObject(url2, UpbitCandle5yDto[].class);
@@ -299,13 +315,13 @@ public class CandleService {
             if (dtos2 != null) {
                 // 두 번째 배치 처리
                 for (UpbitCandle5yDto dto : dtos2) {
-                    LocalDateTime candleDateTime = LocalDateTime.parse(dto.getCandleDateTimeUtc(), DATE_TIME_FORMATTER);
+                    LocalDateTime candleDateTimeUtc = parseDateTime(dto.getCandleDateTimeUtc());
 
-                    if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTime)) {
+                    if (!upbitCandle5yRepository.existsByMarketAndCandleDateTimeUtc(coin, candleDateTimeUtc)) {
                         UpbitCandle5y entity = UpbitCandle5y.builder()
                                 .market(dto.getMarket())
-                                .candleDateTimeUtc(candleDateTime)
-                                .candleDateTimeKst(LocalDateTime.parse(dto.getCandleDateTimeKst(), DATE_TIME_FORMATTER))
+                                .candleDateTimeUtc(candleDateTimeUtc)
+                                .candleDateTimeKst(parseDateTime(dto.getCandleDateTimeKst()))
                                 .openingPrice(dto.getOpeningPrice())
                                 .highPrice(dto.getHighPrice())
                                 .lowPrice(dto.getLowPrice())
