@@ -106,6 +106,18 @@ public class MarketController {
         }
     }
 
+    @GetMapping("/update")
+    public ResponseEntity<Void> updateTradableCoinList() {
+        try {
+            marketService.updateTradableCoinsInDb();
+            return ResponseEntity.status(HttpStatus.OK).body(null);
+        }  catch (Exception e) {
+            log.error("Error updating tradable coins", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+
     @GetMapping("/ticker/{market}")
     @Operation(
             summary = "특정 마켓의 현재가 정보 조회",
