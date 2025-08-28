@@ -349,4 +349,27 @@ public class CandleService {
         }
         Thread.sleep(200);
     }
+
+    @Transactional
+    public void deleteInvalidCandles() {
+        List<String> coins = marketService.getAllTradableCoins().stream()
+                .map(TradableCoinDto::getMarket)
+                .toList();
+
+        if (coins.isEmpty()) {
+            log.warn("No tradable coins, skipping deletion");
+            return;
+        }
+
+        try {
+            upbitCandle7dRepository.deleteByMarketNotIn(coins);
+            upbitCandle30dRepository.deleteByMarketNotIn(coins);
+            upbitCandle3mRepository.deleteByMarketNotIn(coins);
+            upbitCandle1yRepository.deleteByMarketNotIn(coins);
+            upbitCandle5yRepository.deleteByMarketNotIn(coins);
+        } catch (Exception e) {
+            log.error("Timeout or other exception, rolling back", e);
+            throw new RuntimeException(e); // 모든 예외를 런타임으로 감싸 롤백
+        }
+    }
 }
