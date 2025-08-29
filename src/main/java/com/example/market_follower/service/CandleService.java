@@ -4,14 +4,19 @@ import com.example.market_follower.dto.upbit.TradableCoinDto;
 import com.example.market_follower.dto.upbit.candle.*;
 import com.example.market_follower.model.candle.*;
 import com.example.market_follower.repository.candle.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -20,6 +25,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class CandleService {
+    private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate = new RestTemplate();
     private final UpbitCandle7dRepository upbitCandle7dRepository;
@@ -505,5 +511,36 @@ public class CandleService {
             log.error("Exception during invalid candles deletion, rolling back", e);
             throw new RuntimeException(e);
         }
+    }
+
+    // 전체 캔들 데이터를 리턴
+    public Map<String, Object> getAllCandleData() throws IOException {
+        File dir = new File("src/main/resources/candles");
+        if (!dir.exists()) {
+            dir.mkdirs(); // candles 폴더가 없으면 폴더 생성
+        }
+
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        File file = new File(dir, "candles_" + today + ".json");
+        Map<String, Object> data;
+
+        if (!file.exists()) {
+            data = new HashMap<>();
+            data.put("upbit_candle_7d", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_7d"));
+            data.put("upbit_candle_30d", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_30d"));
+            data.put("upbit_candle_3m", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_3m"));
+            data.put("upbit_candle_1y", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_1y"));
+            data.put("upbit_candle_5y", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_5y"));
+
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
+            log.info("{} 파일 생성 완료", file.getName());
+        } else {
+            data = objectMapper.readValue(
+                    file, new TypeReference<Map<String, Object>>() {}
+            );
+            log.info("{} 파일 읽기 완료", file.getName());
+        }
+
+        return data;
     }
 }
