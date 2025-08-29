@@ -572,7 +572,7 @@ public class CandleService {
             List<Map<String, Object>> filteredCandles = candles.stream()
                     .filter(c -> {
                         // JSON 컬럼에 맞춰서 날짜 추출
-                        String candleDateStr = (String) c.get("candleDateTimeUtc");
+                        String candleDateStr = (String) c.get("candle_date_time_utc");
                         LocalDate candleDate = LocalDate.parse(
                                 candleDateStr.substring(0, 10), DateTimeFormatter.ISO_DATE
                         );
