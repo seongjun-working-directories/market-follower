@@ -2,17 +2,19 @@ package com.example.market_follower.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.Duration;
 
+@Slf4j
 @Component
 public class IpRateLimiterInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate redisTemplate;
-    private static final int MAX_REQUESTS = 10; // 분당 최대 10회
+    private static final int MAX_REQUESTS = 15; // 분당 최대 15회
     private static final Duration WINDOW = Duration.ofMinutes(1);
 
     public IpRateLimiterInterceptor(StringRedisTemplate redisTemplate) {
@@ -38,6 +40,7 @@ public class IpRateLimiterInterceptor implements HandlerInterceptor {
         }
 
         if (currentCount > MAX_REQUESTS) {
+            log.warn("IP {} has exceeded rate limit ({} requests per {})", ip, MAX_REQUESTS, WINDOW);
             response.setStatus(429); // Too Many Requests
             response.getWriter().write("Too many requests");
             return false;
