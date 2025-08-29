@@ -26,7 +26,12 @@ public interface UpbitCandle1yRepository extends JpaRepository<UpbitCandle1y, Lo
             @Param("end") LocalDateTime end
     );
 
-    List<LocalDateTime> findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(String market, LocalDateTime start, LocalDateTime end);
+    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle1y c WHERE c.market = :market AND c.candleDateTimeUtc BETWEEN :start AND :end")
+    List<LocalDateTime> findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
+            @Param("market") String market,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
     void deleteByMarketAndCandleDateTimeUtcBefore(String market, LocalDateTime dateTime);
 }
