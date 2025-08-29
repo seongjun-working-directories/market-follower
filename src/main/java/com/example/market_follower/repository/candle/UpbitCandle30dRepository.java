@@ -28,4 +28,10 @@ public interface UpbitCandle30dRepository extends JpaRepository<UpbitCandle30d, 
 
     @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle30d c WHERE c.market = :market")
     List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
+
+    void deleteByMarketAndCandleDateTimeUtcNotBetween(String market, LocalDateTime start, LocalDateTime end);
+
+    List<LocalDateTime> findCandleDateTimeUtcByMarketAndDateRange(String market, LocalDateTime start, LocalDateTime end);
+
+    void deleteByMarketAndCandleDateTimeUtcBefore(String market, LocalDateTime dateTime);
 }
