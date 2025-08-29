@@ -54,7 +54,7 @@ public class CandleService {
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
         Set<LocalDateTime> existingDates = new HashSet<>(
-                upbitCandle7dRepository.findCandleDateTimeUtcByMarketAndDateRange(
+                upbitCandle7dRepository.findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
                         coin, sevenDaysAgoStart, todayStart));
 
         // API에서 178개 요청 (1시간 간격, 7일치)
@@ -111,7 +111,7 @@ public class CandleService {
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
         Set<LocalDateTime> existingDates = new HashSet<>(
-                upbitCandle30dRepository.findCandleDateTimeUtcByMarketAndDateRange(
+                upbitCandle30dRepository.findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
                         coin, thirtyDaysAgoStart, todayStart));
 
         // API에서 30일 데이터 요청 (4시간 단위)
@@ -168,7 +168,7 @@ public class CandleService {
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
         Set<LocalDateTime> existingDates = new HashSet<>(
-                upbitCandle3mRepository.findCandleDateTimeUtcByMarketAndDateRange(
+                upbitCandle3mRepository.findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
                         coin, ninetyDaysAgoStart, todayStart));
 
         // API에서 90일 데이터 요청 (일 단위)
@@ -227,7 +227,7 @@ public class CandleService {
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
         Set<LocalDateTime> existingDates = new HashSet<>(
-                upbitCandle1yRepository.findCandleDateTimeUtcByMarketAndDateRange(
+                upbitCandle1yRepository.findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
                         coin, oneYearAgoStart, todayStart));
 
         List<UpbitCandle1y> entities = new ArrayList<>();
@@ -332,7 +332,7 @@ public class CandleService {
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
         Set<LocalDateTime> existingDates = new HashSet<>(
-                upbitCandle5yRepository.findCandleDateTimeUtcByMarketAndDateRange(
+                upbitCandle5yRepository.findCandleDateTimeUtcByMarketAndCandleDateTimeUtcBetween(
                         coin, fiveYearsAgoStart, todayStart));
 
         List<UpbitCandle5y> entities = new ArrayList<>();
