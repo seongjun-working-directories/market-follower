@@ -1,6 +1,13 @@
 package com.example.market_follower.controller;
 
 import com.example.market_follower.service.CandleService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +24,53 @@ import java.util.Map;
 public class CandleController {
     private final CandleService candleService;
 
-    // 모든 코인 데이터를 앱에 초기 세팅하기 위함 - 앱 최초 다운로드 후 로딩 시, 앱 LocalStorage 가 비어 있을 시 사용
     @GetMapping("/all")
+    @Operation(
+            summary = "전체 캔들 데이터 조회",
+            description = "모든 코인의 캔들 데이터를 조회합니다. 앱 최초 다운로드 후 로딩 시 또는 앱 LocalStorage가 비어있을 때 사용합니다.",
+            tags = {"데이터 조회"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "전체 캔들 데이터 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = @ExampleObject(
+                                    name = "성공 응답 예시",
+                                    value = """
+                    {
+                      "upbit_candle_7d": [
+                        {
+                          "market": "KRW-BTC",
+                          "candle_date_time_utc": "2025-08-29T00:00:00",
+                          "candle_date_time_kst": "2025-08-29T09:00:00",
+                          "opening_price": 85000000.0,
+                          "high_price": 87000000.0,
+                          "low_price": 84000000.0,
+                          "trade_price": 86000000.0,
+                          "candle_acc_trade_price": 1234567890.0,
+                          "candle_acc_trade_volume": 14.35
+                        }
+                      ],
+                      "upbit_candle_30d": [...],
+                      "upbit_candle_3m": [...],
+                      "upbit_candle_1y": [...],
+                      "upbit_candle_5y": [...]
+                    }
+                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            schema = @Schema(implementation = Void.class)
+                    )
+            )
+    })
     public ResponseEntity<Map<String, Object>> getAllCandleData() {
         try {
             Map<String, Object> data = candleService.getAllCandleData();
@@ -29,8 +81,61 @@ public class CandleController {
         }
     }
 
-    // 특정 시점 이후의 데이터를 앱에 세팅하기 위함 - 그 날 최초 로그인일 시 사용 -> /candle/since?period=2025-08-26
     @GetMapping("/since")
+    @Operation(
+            summary = "특정 시점 이후 캔들 데이터 조회",
+            description = "지정된 날짜 이후의 캔들 데이터를 조회합니다. 그 날 최초 로그인 시 사용합니다.",
+            tags = {"데이터 조회"}
+    )
+    @Parameter(
+            name = "period",
+            description = "조회 시작 날짜 (ISO 날짜 형식: YYYY-MM-DD)",
+            required = true,
+            example = "2025-08-26",
+            schema = @Schema(type = "string", format = "date")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "특정 시점 이후 캔들 데이터 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Map.class),
+                            examples = @ExampleObject(
+                                    name = "성공 응답 예시",
+                                    value = """
+                    {
+                      "upbit_candle_7d": [
+                        {
+                          "market": "KRW-BTC",
+                          "candle_date_time_utc": "2025-08-26T00:00:00",
+                          "candle_date_time_kst": "2025-08-26T09:00:00",
+                          "opening_price": 85000000.0,
+                          "high_price": 87000000.0,
+                          "low_price": 84000000.0,
+                          "trade_price": 86000000.0
+                        }
+                      ],
+                      "upbit_candle_30d": [...],
+                      "upbit_candle_3m": [...],
+                      "upbit_candle_1y": [...],
+                      "upbit_candle_5y": [...]
+                    }
+                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 날짜 형식",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
     public ResponseEntity<Map<String, Object>> getAllCandleDataSince(@RequestParam String period) {
         try {
             Map<String, Object> data = candleService.getAllCandleDataSince(period);
@@ -42,6 +147,22 @@ public class CandleController {
     }
 
     @PutMapping("/upsert/manual")
+    @Operation(
+            summary = "캔들 데이터 수동 업데이트",
+            description = "모든 캔들 데이터를 수동으로 업데이트합니다. 정기 스케줄러 외에 필요시 수동 실행할 수 있습니다.",
+            tags = {"데이터 관리"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "캔들 데이터 업데이트 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "캔들 데이터 업데이트 실패",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
     public ResponseEntity<Void> upsertCandleData() {
         try {
             candleService.updateDailyCandleData();
@@ -53,6 +174,22 @@ public class CandleController {
     }
 
     @DeleteMapping("/delete/old/manual")
+    @Operation(
+            summary = "오래된 캔들 데이터 수동 삭제",
+            description = "지정된 기간을 초과한 오래된 캔들 데이터를 수동으로 삭제합니다.",
+            tags = {"데이터 관리"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "오래된 캔들 데이터 삭제 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "오래된 캔들 데이터 삭제 실패",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
     public ResponseEntity<Void> deleteOldCandleData() {
         try {
             candleService.removeOldCandles();
@@ -64,6 +201,22 @@ public class CandleController {
     }
 
     @DeleteMapping("/delete/invalid/coins/manual")
+    @Operation(
+            summary = "유효하지 않은 코인 데이터 수동 삭제",
+            description = "상장폐지되거나 더 이상 거래되지 않는 코인의 캔들 데이터를 수동으로 삭제합니다.",
+            tags = {"데이터 관리"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "유효하지 않은 코인 데이터 삭제 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "유효하지 않은 코인 데이터 삭제 실패",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
     public ResponseEntity<Void> deleteInvalidCoins() {
         try {
             candleService.deleteInvalidCandles();
