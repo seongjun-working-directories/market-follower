@@ -543,4 +543,46 @@ public class CandleService {
 
         return data;
     }
+
+    // 특정 시점 이후의 캔들 데이터를 리턴
+    public Map<String, Object> getAllCandleDataSince(String period) throws IOException {
+        File dir = new File("src/main/resources/candles");
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        File file = new File(dir, "candles_" + today + ".json");
+
+        if (!file.exists()) {
+            // 오늘 JSON 파일이 없으면 기존 getAllCandleData로 생성
+            getAllCandleData();
+        }
+
+        Map<String, Object> allData = objectMapper.readValue(
+                file, new TypeReference<Map<String, Object>>() {}
+        );
+
+        LocalDate fromDate = LocalDate.parse(period, DateTimeFormatter.ISO_DATE);
+        Map<String, Object> filteredData = new HashMap<>();
+
+        for (Map.Entry<String, Object> entry : allData.entrySet()) {
+            List<Map<String, Object>> candles = (List<Map<String, Object>>) entry.getValue();
+
+            List<Map<String, Object>> filteredCandles = candles.stream()
+                    .filter(c -> {
+                        // JSON 컬럼에 맞춰서 날짜 추출
+                        String candleDateStr = (String) c.get("candleDateTimeUtc");
+                        LocalDate candleDate = LocalDate.parse(
+                                candleDateStr.substring(0, 10), DateTimeFormatter.ISO_DATE
+                        );
+                        return !candleDate.isBefore(fromDate); // fromDate 포함 이후
+                    })
+                    .toList();
+
+            filteredData.put(entry.getKey(), filteredCandles);
+        }
+
+        return filteredData;
+    }
 }

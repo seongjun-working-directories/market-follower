@@ -17,8 +17,7 @@ import java.util.Map;
 public class CandleController {
     private final CandleService candleService;
 
-
-    // 모든 코인 데이터를 초기 세팅하기 위함 - 앱 최초 다운로드 후 로딩 시, 앱 LocalStorage 가 비어 있을 시 사용
+    // 모든 코인 데이터를 앱에 초기 세팅하기 위함 - 앱 최초 다운로드 후 로딩 시, 앱 LocalStorage 가 비어 있을 시 사용
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllCandleData() {
         try {
@@ -26,6 +25,18 @@ public class CandleController {
             return ResponseEntity.status(HttpStatus.OK).body(data);
         } catch (Exception e) {
             log.error("Error fetching all candle data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // 특정 시점 이후의 데이터를 앱에 세팅하기 위함 - 그 날 최초 로그인일 시 사용 -> /candle/since?period=2025-08-26
+    @GetMapping("/since")
+    public ResponseEntity<Map<String, Object>> getAllCandleDataSince(@RequestParam String period) {
+        try {
+            Map<String, Object> data = candleService.getAllCandleDataSince(period);
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+        } catch (Exception e) {
+            log.error("Error fetching candle data since {}", period, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
