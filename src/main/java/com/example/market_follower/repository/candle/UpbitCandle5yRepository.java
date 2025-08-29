@@ -12,26 +12,19 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UpbitCandle5yRepository extends JpaRepository<UpbitCandle5y, Long> {
-    boolean existsByMarketAndCandleDateTimeUtc(String market, LocalDateTime candleDateTimeUtc);
-
     @Modifying
     @Transactional
-    @Query("DELETE FROM UpbitCandle7d c WHERE c.market NOT IN :markets")
+    @Query("DELETE FROM UpbitCandle5y c WHERE c.market NOT IN :markets")
     void deleteByMarketNotIn(@Param("markets") List<String> markets);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UpbitCandle5y c WHERE c.candleDateTimeUtc < :threshold")
-    void deleteOlderThan5y(@Param("threshold") LocalDateTime threshold);
-
-    Optional<UpbitCandle5y> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
-
-    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle5y c WHERE c.market = :market")
-    List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
-
-    List<UpbitCandle5y> findByMarket(String market);
-
-    void deleteByMarketAndCandleDateTimeUtcNotBetween(String market, LocalDateTime start, LocalDateTime end);
+    @Query("DELETE FROM UpbitCandle5y c WHERE c.market = :market AND (c.candleDateTimeUtc < :start OR c.candleDateTimeUtc > :end)")
+    void deleteByMarketAndCandleDateTimeUtcOutsideRange(
+            @Param("market") String market,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
     List<LocalDateTime> findCandleDateTimeUtcByMarketAndDateRange(String market, LocalDateTime start, LocalDateTime end);
 

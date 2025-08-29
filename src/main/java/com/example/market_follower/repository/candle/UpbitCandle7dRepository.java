@@ -21,15 +21,12 @@ public interface UpbitCandle7dRepository extends JpaRepository<UpbitCandle7d, Lo
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UpbitCandle7d c WHERE c.candleDateTimeUtc < :threshold")
-    void deleteOlderThan7d(@Param("threshold") LocalDateTime threshold);
-
-    Optional<UpbitCandle7d> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
-
-    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle7d c WHERE c.market = :market")
-    List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
-
-    void deleteByMarketAndCandleDateTimeUtcNotBetween(String market, LocalDateTime start, LocalDateTime end);
+    @Query("DELETE FROM UpbitCandle7d c WHERE c.market = :market AND (c.candleDateTimeUtc < :start OR c.candleDateTimeUtc > :end)")
+    void deleteByMarketAndCandleDateTimeUtcOutsideRange(
+            @Param("market") String market,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
     List<LocalDateTime> findCandleDateTimeUtcByMarketAndDateRange(String market, LocalDateTime start, LocalDateTime end);
 

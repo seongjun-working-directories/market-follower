@@ -16,20 +16,17 @@ public interface UpbitCandle3mRepository extends JpaRepository<UpbitCandle3m, Lo
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UpbitCandle7d c WHERE c.market NOT IN :markets")
+    @Query("DELETE FROM UpbitCandle3m c WHERE c.market NOT IN :markets")
     void deleteByMarketNotIn(@Param("markets") List<String> markets);
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM UpbitCandle3m c WHERE c.candleDateTimeUtc < :threshold")
-    void deleteOlderThan3m(@Param("threshold") LocalDateTime threshold);
-
-    Optional<UpbitCandle3m> findTopByMarketOrderByCandleDateTimeUtcDesc(String market);
-
-    @Query("SELECT c.candleDateTimeUtc FROM UpbitCandle3m c WHERE c.market = :market")
-    List<LocalDateTime> findCandleDateTimeUtcByMarket(@Param("market") String market);
-
-    void deleteByMarketAndCandleDateTimeUtcNotBetween(String market, LocalDateTime start, LocalDateTime end);
+    @Query("DELETE FROM UpbitCandle3m c WHERE c.market = :market AND (c.candleDateTimeUtc < :start OR c.candleDateTimeUtc > :end)")
+    void deleteByMarketAndCandleDateTimeUtcOutsideRange(
+            @Param("market") String market,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 
     List<LocalDateTime> findCandleDateTimeUtcByMarketAndDateRange(String market, LocalDateTime start, LocalDateTime end);
 

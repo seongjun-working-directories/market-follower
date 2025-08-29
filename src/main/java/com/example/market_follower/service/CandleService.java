@@ -49,7 +49,7 @@ public class CandleService {
         log.info("7일 캔들 동기화 범위: {} ~ {}", sevenDaysAgoStart, todayStart);
 
         // 범위를 벗어나는 데이터 삭제
-        upbitCandle7dRepository.deleteByMarketAndCandleDateTimeUtcNotBetween(
+        upbitCandle7dRepository.deleteByMarketAndCandleDateTimeUtcOutsideRange(
                 coin, sevenDaysAgoStart, todayStart);
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
@@ -106,7 +106,7 @@ public class CandleService {
         log.info("30일 캔들 동기화 범위: {} ~ {}", thirtyDaysAgoStart, todayStart);
 
         // 범위를 벗어나는 데이터 삭제
-        upbitCandle30dRepository.deleteByMarketAndCandleDateTimeUtcNotBetween(
+        upbitCandle30dRepository.deleteByMarketAndCandleDateTimeUtcOutsideRange(
                 coin, thirtyDaysAgoStart, todayStart);
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
@@ -163,7 +163,7 @@ public class CandleService {
         log.info("3달 캔들 동기화 범위: {} ~ {}", ninetyDaysAgoStart, todayStart);
 
         // 범위를 벗어나는 데이터 삭제
-        upbitCandle3mRepository.deleteByMarketAndCandleDateTimeUtcNotBetween(
+        upbitCandle3mRepository.deleteByMarketAndCandleDateTimeUtcOutsideRange(
                 coin, ninetyDaysAgoStart, todayStart);
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
@@ -222,7 +222,7 @@ public class CandleService {
         log.info("1년 캔들 동기화 범위: {} ~ {}", oneYearAgoStart, todayStart);
 
         // 범위를 벗어나는 데이터 삭제
-        upbitCandle1yRepository.deleteByMarketAndCandleDateTimeUtcNotBetween(
+        upbitCandle1yRepository.deleteByMarketAndCandleDateTimeUtcOutsideRange(
                 coin, oneYearAgoStart, todayStart);
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
@@ -327,7 +327,7 @@ public class CandleService {
         log.info("5년 캔들 동기화 범위: {} ~ {}", fiveYearsAgoStart, todayStart);
 
         // 범위를 벗어나는 데이터 삭제
-        upbitCandle5yRepository.deleteByMarketAndCandleDateTimeUtcNotBetween(
+        upbitCandle5yRepository.deleteByMarketAndCandleDateTimeUtcOutsideRange(
                 coin, fiveYearsAgoStart, todayStart);
 
         // 현재 DB에 있는 시간들 조회 (범위 내)
