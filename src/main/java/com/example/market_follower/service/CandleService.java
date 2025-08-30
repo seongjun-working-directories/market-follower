@@ -673,7 +673,7 @@ public class CandleService {
                     String toTimeStr = toTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
                     url += "&to=" + toTimeStr;
                 }
-                log.debug("API 요청: {} (count: {})", market, requestCount);
+                log.info("API 요청: {} (count: {})", market, requestCount);
 
                 UpbitCandle1dDto[] dtos = restTemplate.getForObject(url, UpbitCandle1dDto[].class);
 
