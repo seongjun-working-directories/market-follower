@@ -468,8 +468,8 @@ public class CandleService {
         }
     }
 
-    // 매일 새벽 00시 10분에 실행 (0초 10분 00시 매일)
-    @Scheduled(cron = "0 10 0 * * ?")
+    // 매일 9시 5분에 실행 (0초 5분 9시 매일)
+    @Scheduled(cron = "0 5 9 * * ?")
     @Transactional
     public void updateAllCandleData() {
         log.info("매일 캔들 데이터 업데이트 시작");
@@ -744,8 +744,8 @@ public class CandleService {
         return map;
     }
 
-    // 매일 23:59 에 Redis 1 Day 캔들 정리
-    @Scheduled(cron = "0 59 23 * * ?")
+    // 매일 08:58 에 Redis 1 Day 캔들 정리
+    @Scheduled(cron = "0 58 8 * * ?")
     public void cleanupDailyCandleData() {
         log.info("Redis 1Day 캔들 데이터 정리 시작");
 

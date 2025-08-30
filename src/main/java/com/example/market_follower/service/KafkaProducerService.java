@@ -29,7 +29,7 @@ public class KafkaProducerService {
 
     private volatile boolean isUpdating = false;
 
-    @Scheduled(cron = "0 0 1 * * *")  // 매일 1시 정각 실행 (초, 분, 시, 일, 월, 요일)
+    @Scheduled(cron = "0 40 8 * * *")  // 매일 8시 40분에 실행 (초, 분, 시, 일, 월, 요일)
     public void scheduledUpdateTradableCoins() {
         if (isUpdating) {
             log.info("DB update already in progress, skipping scheduled update.");
