@@ -689,11 +689,6 @@ public class CandleService {
                     if (candleTime != null && candleTime.toLocalDate().equals(todayStart.toLocalDate())) {
                         Map<String, Object> candleMap = convertUpbitCandle1dDtoToMap(dto);
                         allCandles.add(candleMap);
-                    } else {
-                        log.info("캔들 제외: market={}, candleTime={}, todayStart={}",
-                                dto.getMarket(),
-                                candleTime != null ? candleTime.toString() : "null",
-                                todayStart.toLocalDate());
                     }
                 }
 
