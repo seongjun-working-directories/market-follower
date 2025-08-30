@@ -686,10 +686,14 @@ public class CandleService {
                 for (UpbitCandle1dDto dto : batch) {
                     LocalDateTime candleTime = parseDateTime(dto.getCandleDateTimeKst());
 
-                    // 오늘 00시 이후의 데이터만 포함
-                    if (candleTime != null && !candleTime.isBefore(todayStart) && !candleTime.isAfter(currentTime)) {
+                    if (candleTime != null && candleTime.toLocalDate().equals(todayStart.toLocalDate())) {
                         Map<String, Object> candleMap = convertUpbitCandle1dDtoToMap(dto);
                         allCandles.add(candleMap);
+                    } else {
+                        log.info("캔들 제외: market={}, candleTime={}, todayStart={}",
+                                dto.getMarket(),
+                                candleTime != null ? candleTime.toString() : "null",
+                                todayStart.toLocalDate());
                     }
                 }
 
