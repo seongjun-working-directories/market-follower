@@ -701,7 +701,7 @@ public class CandleService {
                     break;
                 }
 
-                Thread.sleep(100); // API 호출 제한 고려
+                Thread.sleep(200); // API 호출 제한 고려
             }
 
             // 시간순 정렬 (오래된 것부터)
@@ -766,7 +766,7 @@ public class CandleService {
     }
 
     // 5분마다 실행되는 스케줄러 - 모든 코인의 최신 5분 캔들을 Redis에 저장
-    @Scheduled(fixedRate = 300000) // 5분마다 실행 (300,000ms)
+    @Scheduled(initialDelay = 300000, fixedRate = 300000) // 5분마다 실행 (300,000ms)
     public void updateAllDailyCandleData() {
         log.info("Redis 1Day 캔들 데이터 업데이트 시작");
 
