@@ -678,6 +678,7 @@ public class CandleService {
                 UpbitCandle1dDto[] dtos = restTemplate.getForObject(url, UpbitCandle1dDto[].class);
 
                 if (dtos == null || dtos.length == 0) { break; }
+                log.info("UpbitCandle1dDto[] 의 크기: {}", dtos != null ? dtos.length : 0);
 
                 List<UpbitCandle1dDto> batch = Arrays.asList(dtos);
                 Collections.reverse(batch);
