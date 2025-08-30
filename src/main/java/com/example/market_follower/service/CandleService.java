@@ -103,7 +103,7 @@ public class CandleService {
 
             log.info("7일 캔들 데이터 동기화 완료 - {} 코인, 저장: {}개", coin, saveList.size());
         }
-        Thread.sleep(200);
+        Thread.sleep(500);
     }
 
     // 30일 데이터 동기화 - 오늘 00시 기준 정확히 30일 범위
@@ -160,7 +160,7 @@ public class CandleService {
 
             log.info("30일 캔들 데이터 동기화 완료 - {} 코인, 저장: {}개", coin, saveList.size());
         }
-        Thread.sleep(200);
+        Thread.sleep(500);
     }
 
     // 3달 데이터 동기화 - 오늘 00시 기준 정확히 90일 범위
@@ -219,7 +219,7 @@ public class CandleService {
 
             log.info("3달 캔들 데이터 동기화 완료 - {} 코인, 저장: {}개", coin, saveList.size());
         }
-        Thread.sleep(200);
+        Thread.sleep(500);
     }
 
     // 1년 데이터 동기화 - 오늘 00시 기준 정확히 365일 범위
@@ -273,7 +273,7 @@ public class CandleService {
                     existingDates.add(candleDateTimeUtc);
                 }
             }
-            Thread.sleep(200);
+            Thread.sleep(500);
 
             // 두 번째 요청: 나머지 165일
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
@@ -313,7 +313,7 @@ public class CandleService {
                     }
                 }
             }
-            Thread.sleep(200);
+            Thread.sleep(500);
         }
 
         // 배치 저장
@@ -375,7 +375,7 @@ public class CandleService {
                     existingDates.add(candleDateTimeUtc);
                 }
             }
-            Thread.sleep(200);
+            Thread.sleep(500);
 
             // 두 번째 요청: 나머지 주 데이터 (5년은 약 260주이므로 추가 60주)
             String lastDateTimeUtc = dtos1[dtos1.length - 1].getCandleDateTimeUtc();
@@ -413,7 +413,7 @@ public class CandleService {
                     }
                 }
             }
-            Thread.sleep(200);
+            Thread.sleep(500);
         }
 
         // 배치 저장
@@ -468,8 +468,8 @@ public class CandleService {
         }
     }
 
-    // 매일 새벽 2시에 실행 (0초 0분 2시 매일)
-    @Scheduled(cron = "0 0 2 * * ?")
+    // 매일 새벽 00시 10분에 실행 (0초 10분 00시 매일)
+    @Scheduled(cron = "0 10 0 * * ?")
     @Transactional
     public void updateAllCandleData() {
         log.info("매일 캔들 데이터 업데이트 시작");
@@ -634,7 +634,7 @@ public class CandleService {
                 log.info("Redis 초기화 진행 - {}/{} : {}", count, coins.size(), market);
                 setDailyCandleData(market, todayStart, currentRoundedTime);
                 count++;
-                Thread.sleep(150); // API 호출 제한 고려
+                Thread.sleep(250); // API 호출 제한 고려
             }
 
             log.info("모든 코인 Redis 1Day 캔들 초기화 완료 - {}개 코인", coins.size());

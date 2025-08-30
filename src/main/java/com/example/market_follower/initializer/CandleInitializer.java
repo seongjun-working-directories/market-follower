@@ -14,9 +14,9 @@ public class CandleInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        candleService.updateAllCandleData();
-        Thread.sleep(10000);
         candleService.initializeAllDailyCandleData();
+        Thread.sleep(5000);
+        candleService.updateAllCandleData();
     }
 }
 
