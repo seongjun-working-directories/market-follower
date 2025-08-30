@@ -45,7 +45,7 @@ public class KafkaProducerService {
         }
     }
 
-    @Scheduled(initialDelay = 90000, fixedDelay = 10000)   // 1분 30초 후 첫 실행, 10초마다 실행
+    @Scheduled(initialDelay = 120000, fixedDelay = 10000)   // 2분 후 첫 실행, 10초마다 실행
     public void fetchAndSendTickerData() {
         if (isUpdating) {
             log.info("DB update in progress, skipping ticker fetch.");
