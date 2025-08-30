@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -165,7 +167,7 @@ public class CandleController {
     })
     public ResponseEntity<Void> upsertCandleData() {
         try {
-            candleService.updateDailyCandleData();
+            candleService.updateAllCandleData();
             return ResponseEntity.status(HttpStatus.OK).body(null);
         }  catch (Exception e) {
             log.error("Error manually updating candle data", e);
@@ -223,6 +225,98 @@ public class CandleController {
             return ResponseEntity.status(HttpStatus.OK).body(null);
         } catch (Exception e) {
             log.error("Error deleting invalid candle data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/daily")
+    @Operation(
+            summary = "특정 코인의 일별 캔들 데이터 조회",
+            description = "지정된 마켓의 일별 캔들 데이터를 조회합니다.",
+            tags = {"데이터 조회"}
+    )
+    @Parameter(
+            name = "market",
+            description = "조회할 마켓 코드 (예: KRW-BTC, KRW-ETH)",
+            required = true,
+            example = "KRW-BTC",
+            schema = @Schema(type = "string")
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "일별 캔들 데이터 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = List.class),
+                            examples = @ExampleObject(
+                                    name = "성공 응답 예시",
+                                    value = """
+                    [
+                      {
+                        "market": "KRW-BTC",
+                        "candle_date_time_utc": "2025-08-29T00:00:00",
+                        "candle_date_time_kst": "2025-08-29T09:00:00",
+                        "opening_price": 85000000.0,
+                        "high_price": 87000000.0,
+                        "low_price": 84000000.0,
+                        "trade_price": 86000000.0,
+                        "candle_acc_trade_price": 1234567890.0,
+                        "candle_acc_trade_volume": 14.35,
+                        "prev_closing_price": 84500000.0,
+                        "change_price": 1500000.0,
+                        "change_rate": 0.0177
+                      }
+                    ]
+                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 마켓 코드",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
+    public ResponseEntity<List<Map<String, Object>>> getDailyCandleData(@RequestParam String market) {
+        try {
+            List<Map<String, Object>> data = candleService.getDailyCandleData(market);
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+        } catch (Exception e) {
+            log.error("Error reading daily candle data", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PutMapping("/upsert/daily/manual")
+    @Operation(
+            summary = "일별 캔들 데이터 수동 업데이트",
+            description = "모든 코인의 일별 캔들 데이터를 정리하고 다시 초기화합니다. 기존 일별 데이터를 정리한 후 새로운 데이터로 업데이트합니다.",
+            tags = {"데이터 관리"}
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "일별 캔들 데이터 업데이트 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "일별 캔들 데이터 업데이트 실패",
+                    content = @Content(schema = @Schema(implementation = Void.class))
+            )
+    })
+    public ResponseEntity<Void> upsertDailyCandleData() {
+        try {
+            candleService.cleanupDailyCandleData();
+            candleService.initializeAllDailyCandleData();
+            return ResponseEntity.status(HttpStatus.OK).body(null);
+        }  catch (Exception e) {
+            log.error("Error manually updating daily candle data", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
