@@ -624,9 +624,10 @@ public class CandleService {
             LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
 
             // 현재 시간을 5분 단위로 내림
-            int minute = now.getMinute();
-            int roundedMinute = (minute / 5) * 5;
-            LocalDateTime currentRoundedTime = now.withMinute(roundedMinute).withSecond(0).withNano(0);
+            int minute = now.getHour() * 60 + now.getMinute();
+            int roundedTotalMinutes = (minute / 5) * 5;
+            LocalDateTime currentRoundedTime = now
+                    .withHour(0).withMinute(0).withSecond(0).withNano(0).plusMinutes(roundedTotalMinutes);
 
             int count = 1;
             for (String market : coins) {
