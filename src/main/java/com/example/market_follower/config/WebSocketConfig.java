@@ -8,6 +8,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -38,5 +39,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns("*")
                 .addInterceptors(new JwtHandshakeInterceptor(jwtTokenProvider))
                 .withSockJS();
+    }
+
+    @Override
+    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
+        // Send buffer 크기 제한 (바이트 단위)
+        registration.setSendBufferSizeLimit(2048 * 1024); // 2MB
+        // Send time limit (ms) - 오래 걸리는 send 강제 종료
+        registration.setSendTimeLimit(10000); // 10초 안에 못 보내면 버림
     }
 }
