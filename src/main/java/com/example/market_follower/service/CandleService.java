@@ -1,8 +1,8 @@
 package com.example.market_follower.service;
 
-import com.example.market_follower.dto.upbit.TradableCoinDto;
 import com.example.market_follower.dto.upbit.candle.*;
 import com.example.market_follower.model.candle.*;
+import com.example.market_follower.repository.TradableCoinRepository;
 import com.example.market_follower.repository.candle.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +35,7 @@ public class CandleService {
     private final UpbitCandle3mRepository upbitCandle3mRepository;
     private final UpbitCandle1yRepository upbitCandle1yRepository;
     private final UpbitCandle5yRepository upbitCandle5yRepository;
+    private final TradableCoinRepository tradableCoinRepository;
     private final MarketService marketService;
 
     private LocalDateTime parseDateTime(String dateTimeString) {
@@ -449,9 +450,7 @@ public class CandleService {
     }
 
     private void syncCandlesByType(String type) throws InterruptedException {
-        List<String> coins = marketService.getAllTradableCoins().stream()
-                .map(TradableCoinDto::getMarket)
-                .toList();
+        List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
         int count = 1;
         for (String coin : coins) {
@@ -494,9 +493,7 @@ public class CandleService {
 
     @Transactional
     public void deleteInvalidCandles() {
-        List<String> coins = marketService.getAllTradableCoins().stream()
-                .map(TradableCoinDto::getMarket)
-                .toList();
+        List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
         if (coins.isEmpty()) {
             log.warn("No tradable coins, skipping deletion");
@@ -616,9 +613,7 @@ public class CandleService {
         log.info("모든 코인 Redis 1Day 캔들 초기화 시작");
 
         try {
-            List<String> coins = marketService.getAllTradableCoins().stream()
-                    .map(TradableCoinDto::getMarket)
-                    .toList();
+            List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
@@ -750,9 +745,7 @@ public class CandleService {
         log.info("Redis 1Day 캔들 데이터 정리 시작");
 
         try {
-            List<String> coins = marketService.getAllTradableCoins().stream()
-                    .map(TradableCoinDto::getMarket)
-                    .toList();
+            List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
             for (String coin : coins) {
                 String redisKey = "upbit:daily:" + coin;
@@ -771,9 +764,7 @@ public class CandleService {
         log.info("Redis 1Day 캔들 데이터 업데이트 시작");
 
         try {
-            List<String> coins = marketService.getAllTradableCoins().stream()
-                    .map(TradableCoinDto::getMarket)
-                    .toList();
+            List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
             for (String coin : coins) {
                 updateDailyCandleData(coin);
