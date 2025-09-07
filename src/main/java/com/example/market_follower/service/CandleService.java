@@ -452,18 +452,34 @@ public class CandleService {
     private void syncCandlesByType(String type) throws InterruptedException {
         List<String> coins = tradableCoinRepository.findAllMarkets().stream().toList();
 
-        int count = 1;
-        for (String coin : coins) {
-            log.info("{} 캔들 동기화 - {}/{}", type, count, coins.size());
+        int batchSize = 30; // 30개씩 처리
+        int totalBatches = (coins.size() + batchSize - 1) / batchSize;
 
-            switch (type) {
-                case "7d" -> sync7d(coin);
-                case "30d" -> sync30d(coin);
-                case "3m" -> sync3m(coin);
-                case "1y" -> sync1y(coin);
-                case "5y" -> sync5y(coin);
+        for (int batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            int startIdx = batchIndex * batchSize;
+            int endIdx = Math.min(startIdx + batchSize, coins.size());
+            List<String> batch = coins.subList(startIdx, endIdx);
+
+            log.info("{} 캔들 동기화 배치 {}/{} - {}개 코인", type, batchIndex + 1, totalBatches, batch.size());
+
+            int count = startIdx + 1;
+            for (String coin : batch) {
+                log.info("{} 캔들 동기화 - {}/{}", type, count, coins.size());
+
+                switch (type) {
+                    case "7d" -> sync7d(coin);
+                    case "30d" -> sync30d(coin);
+                    case "3m" -> sync3m(coin);
+                    case "1y" -> sync1y(coin);
+                    case "5y" -> sync5y(coin);
+                }
+                count++;
             }
-            count++;
+
+            // 배치 완료 후 메모리 정리
+            System.gc();
+            log.info("{} 캔들 배치 {}/{} 완료 - 메모리 정리 중...", type, batchIndex + 1, totalBatches);
+            Thread.sleep(3000); // 3초 대기로 메모리 정리 시간 확보
         }
     }
 
