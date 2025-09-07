@@ -67,7 +67,8 @@ jobs:
               --bootstrap-server 127.0.0.1:9092 \
               --partitions 3 \
               --replication-factor 1 \
-              --config retention.ms=600000
+              --config retention.ms=600000 \
+              --config segment.bytes=10485760
             
             # Redis 컨테이너 중지 및 삭제
             docker-compose -f infra/docker-compose.redis.yml down
