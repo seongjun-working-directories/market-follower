@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.BufferExhaustedException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -82,6 +83,9 @@ public class KafkaProducerService {
             kafkaTemplate.send(topic, message);
 
             log.info("Sent ticker data for {} coins to Kafka", tickerList.size());
+        } catch (BufferExhaustedException e) {
+            log.error("Buffer exhausted: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("Error fetching or sending ticker data", e);
         }
