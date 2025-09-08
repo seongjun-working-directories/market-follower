@@ -35,7 +35,7 @@ public class TradeHistory {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TradeStatus status; // WAITING, SUCCESS, FAILED
+    private TradeStatus status; // WAITING, SUCCESS, FAILED, CANCELLED
 
     @Builder.Default
     @Column(name = "request_at", nullable = false, updatable = false)
@@ -49,6 +49,6 @@ public class TradeHistory {
     }
 
     public enum TradeStatus {
-        WAITING, SUCCESS, FAILED
+        WAITING, SUCCESS, FAILED, CANCELLED
     }
 }

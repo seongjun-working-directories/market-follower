@@ -31,7 +31,7 @@ public class TradeHistoryDto {
     private BigDecimal size;
 
     @Schema(description = "거래 상태", example = "WAITING")
-    private String status; // WAITING, SUCCESS, FAILED
+    private String status; // WAITING, SUCCESS, FAILED, CANCELLED
 
     @Schema(description = "주문 요청 시각")
     @JsonProperty("request_at")

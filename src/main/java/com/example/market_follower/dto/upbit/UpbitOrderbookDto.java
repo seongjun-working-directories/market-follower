@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -46,18 +47,18 @@ public class UpbitOrderbookDto {
 
         @Schema(description = "매도호가", example = "155978000")
         @JsonProperty("ask_price")
-        private double askPrice;
+        private BigDecimal askPrice;
 
         @Schema(description = "매수호가", example = "155952000")
         @JsonProperty("bid_price")
-        private double bidPrice;
+        private BigDecimal bidPrice;
 
         @Schema(description = "매도 잔량", example = "0.00001081")
         @JsonProperty("ask_size")
-        private double askSize;
+        private BigDecimal askSize;
 
         @Schema(description = "매수 잔량", example = "0.03361451")
         @JsonProperty("bid_size")
-        private double bidSize;
+        private BigDecimal bidSize;
     }
 }
