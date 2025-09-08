@@ -1,10 +1,12 @@
 package com.example.market_follower.service;
 
+import com.example.market_follower.dto.upbit.UpbitOrderbookDto;
 import com.example.market_follower.dto.upbit.UpbitTickerDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -14,8 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -28,11 +29,10 @@ public class KafkaConsumerService {
 
     // Kafka에서 받은 메시지를 Redis에 최신 상태로 저장만 하고 WebSocket 발송은 주기별로 처리
     @KafkaListener(topics = "upbit-ticker-topic", groupId = "upbit-group", concurrency = "3")
-    public void consume(String message) {
+    public void consumeTicker(String message) {
         try {
             // Kafka에서 받은 메시지를 객체로 변환
-            List<UpbitTickerDto> tickers = objectMapper.readValue(message, new TypeReference<List<UpbitTickerDto>>() {
-            });
+            List<UpbitTickerDto> tickers = objectMapper.readValue(message, new TypeReference<List<UpbitTickerDto>>() {});
             log.info("Kafa Consumer received {} tickers", tickers.size());
 
             // 1. 먼저 모든 데이터를 Redis에 저장 (최신 상태 유지)
@@ -40,7 +40,7 @@ public class KafkaConsumerService {
                 try {
                     String key = "upbit:ticker:" + dto.getMarket();
                     String jsonValue = objectMapper.writeValueAsString(dto);
-                    redisTemplate.opsForValue().set(key, jsonValue, Duration.ofMinutes(5));
+                    redisTemplate.opsForValue().set(key, jsonValue, Duration.ofMinutes(3));
                 } catch (Exception e) {
                     log.error("Failed to save ticker to Redis: {}", dto.getMarket(), e);
                 }
@@ -93,6 +93,59 @@ public class KafkaConsumerService {
             }
         } catch (Exception e) {
             log.error("Failed to broadcast latest tickers via WebSocket", e);
+        }
+    }
+
+    @KafkaListener(topics = "upbit-orderbook-topic", groupId = "upbit-group", concurrency = "3")
+    public void consumeOrderbook(String message) {
+        try {
+            List<UpbitOrderbookDto> orderbooks = objectMapper.readValue(message, new TypeReference<List<UpbitOrderbookDto>>() {});
+            log.info("Kafka Consumer received {} orderbooks", orderbooks.size());
+
+            for (UpbitOrderbookDto dto : orderbooks) {
+                try {
+                    String key = "upbit:orderbook:" + dto.getMarket();
+                    String jsonValue = objectMapper.writeValueAsString(dto);
+                    redisTemplate.opsForValue().set(key, jsonValue, Duration.ofMinutes(3));
+                } catch (Exception e) {
+                    log.error("Failed to save orderbook to Redis: {}", dto.getMarket(), e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to process orderbook Kafka message", e);
+        }
+    }
+
+    @Scheduled(initialDelay = 140000, fixedRate = 10000)
+    public void broadcastLatestOrderbooks() {
+        try {
+            List<UpbitOrderbookDto> latestOrderbooks = new ArrayList<>();
+
+            // keys()로 모든 키 조회 (작은 규모 Redis에서만 사용)
+            Set<String> keys = redisTemplate.keys("upbit:orderbook:*");
+            if (keys != null) {
+                for (String key : keys) {
+                    String json = redisTemplate.opsForValue().get(key);
+                    if (json != null) {
+                        latestOrderbooks.add(objectMapper.readValue(json, UpbitOrderbookDto.class));
+                    }
+                }
+            }
+
+            if (latestOrderbooks.isEmpty()) {
+                log.warn("No orderbooks found in Redis to broadcast");
+                return;
+            }
+
+            // Orderbook은 전체 전송이 필요 없음
+
+            // 개별 전송
+            for (UpbitOrderbookDto dto : latestOrderbooks) {
+                messagingTemplate.convertAndSend("/topic/orderbook/" + dto.getMarket(), dto);
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to broadcast latest orderbooks via WebSocket", e);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.market_follower.service;
 
+import com.example.market_follower.dto.upbit.UpbitOrderbookDto;
 import com.example.market_follower.dto.upbit.UpbitTickerDto;
 import com.example.market_follower.model.TradableCoin;
 import com.example.market_follower.repository.TradableCoinRepository;
@@ -42,6 +43,42 @@ public class KafkaProducerService {
             log.info("Scheduled task finished: tradable coins updated");
         } finally {
             isUpdating = false;
+        }
+    }
+
+    @Scheduled(initialDelay = 130000, fixedDelay = 10000)   // 2분 10초 후 첫 실행, 10초마다 실행
+    public void fetchAndSendOrderbookData() {
+        if (isUpdating) {
+            log.info("DB update in progress, skipping ticker fetch.");
+            return;  // DB 업데이트 중이면 바로 종료
+        }
+
+        try {
+            List<String> markets = tradableCoinRepository.findAll()
+                    .stream()
+                    .map(TradableCoin::getMarket)
+                    .toList();
+            
+            if (markets.isEmpty()) {
+                log.warn("코인 데이터가 없기 때문에 호가 데이터는 전송되지 않습니다.");
+                return;
+            }
+
+            String marketsParam = String.join(",", markets);
+            String url = "https://api.upbit.com/v1/orderbook?markets=" + marketsParam;
+            
+            String jsonResponse = restTemplate.getForObject(url, String.class);
+
+            List<UpbitOrderbookDto> orderbookList = objectMapper.readValue(jsonResponse, new TypeReference<List<UpbitOrderbookDto>>() {});
+            String message = objectMapper.writeValueAsString(orderbookList);
+            kafkaTemplate.send("upbit-orderbook-topic", message);
+
+            log.info("Sent orderbook data for {} coins to Kafka", orderbookList.size());
+        } catch (BufferExhaustedException e) {
+            log.error("Buffer exhausted: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error fetching or sending orderbook data", e);
         }
     }
 
