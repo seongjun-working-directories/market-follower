@@ -7,11 +7,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tradable_coin")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class TradableCoin {
     @Id
     @Column(name = "market", length = 20)
