@@ -23,8 +23,8 @@ public class WalletService {
             user.getUsername()
         ).orElseThrow(() -> new RuntimeException("회원 정보 없음"));
 
-        Wallet wallet = walletRepository.findByMemberId(
-            member.getId()
+        Wallet wallet = walletRepository.findByMember(
+            member
         ).orElseThrow(() -> new RuntimeException("지갑 정보 없음"));
 
         return WalletDto.builder()

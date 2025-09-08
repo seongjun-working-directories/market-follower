@@ -6,6 +6,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.example.market_follower.model.Member;
+import com.example.market_follower.repository.MemberRepository;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @RequiredArgsConstructor
 public class OrderbookService {
+    private final MemberRepository memberRepository;
     private final WalletRepository walletRepository;
     private final TradeHistoryRepository tradeHistoryRepository;
     private final HoldingRepository holdingRepository;
@@ -45,6 +48,8 @@ public class OrderbookService {
     ) {
         // 1. memberId 추출 (예: username에 memberId 저장했다고 가정)
         Long memberId = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 2. DTO 검증
         if (tradeRequestDto.getPrice() == null || tradeRequestDto.getPrice().doubleValue() <= 0) {
@@ -61,7 +66,7 @@ public class OrderbookService {
         }
 
         // 3. 지갑 조회
-        Wallet wallet = walletRepository.findByMemberId(memberId).orElseThrow(() -> new IllegalStateException("Wallet not found"));
+        Wallet wallet = walletRepository.findByMember(member).orElseThrow(() -> new IllegalStateException("Wallet not found"));
 
         // 4. BUY 주문인 경우
         if (tradeRequestDto.getSide() == TradeHistory.Side.BUY) {
@@ -79,7 +84,7 @@ public class OrderbookService {
 
             // 7. trade_history에 주문 내역 저장
             TradeHistory tradeHistory = TradeHistory.builder()
-                .memberId(memberId)
+                .member(member)
                 .market(tradeRequestDto.getMarket())
                 .side(tradeRequestDto.getSide())
                 .price(tradeRequestDto.getPrice())
@@ -93,7 +98,7 @@ public class OrderbookService {
         // 9. SELL 주문인 경우
         if (tradeRequestDto.getSide() == TradeHistory.Side.SELL) {
             // 10. 보유 여부 확인
-            Holding holding = holdingRepository.findByMemberIdAndMarket(memberId, tradeRequestDto.getMarket())
+            Holding holding = holdingRepository.findByMemberAndMarket(member, tradeRequestDto.getMarket())
                 .orElseThrow(() -> new IllegalStateException("No holdings for the specified market"));
             
             // 11. 보유 수량 확인
@@ -110,7 +115,7 @@ public class OrderbookService {
 
             // 14. trade_history에 주문 내역 저장
             TradeHistory tradeHistory = TradeHistory.builder()
-                .memberId(memberId)
+                .member(member)
                 .market(tradeRequestDto.getMarket())
                 .side(tradeRequestDto.getSide())
                 .price(tradeRequestDto.getPrice())
@@ -247,7 +252,7 @@ public class OrderbookService {
 
     private void executeBuyOrder(TradeHistory order, BigDecimal executionPrice) {
         // 1. 지갑에서 locked 자금 해제
-        Wallet wallet = walletRepository.findByMemberId(order.getMemberId())
+        Wallet wallet = walletRepository.findByMember(order.getMember())
             .orElseThrow(() -> new IllegalStateException("Wallet not found"));
 
         BigDecimal lockedAmount = order.getPrice().multiply(order.getSize());
@@ -266,7 +271,7 @@ public class OrderbookService {
 
         // 2. 보유 자산에 추가 (avg_price로 컬럼명 맞춤)
         Optional<Holding> existingHolding = holdingRepository
-            .findByMemberIdAndMarket(order.getMemberId(), order.getMarket());
+            .findByMemberAndMarket(order.getMember(), order.getMarket());
 
         if (existingHolding.isPresent()) {
             // 기존 보유량에 추가
@@ -284,7 +289,7 @@ public class OrderbookService {
         } else {
             // 새로운 보유 자산 생성
             Holding newHolding = Holding.builder()
-                .memberId(order.getMemberId())
+                .member(order.getMember())
                 .market(order.getMarket())
                 .size(order.getSize())
                 .avgPrice(executionPrice)
@@ -296,14 +301,14 @@ public class OrderbookService {
 
     private void executeSellOrder(TradeHistory order, BigDecimal executionPrice) {
         // 1. 보유 자산에서 locked 해제
-        Holding holding = holdingRepository.findByMemberIdAndMarket(order.getMemberId(), order.getMarket())
+        Holding holding = holdingRepository.findByMemberAndMarket(order.getMember(), order.getMarket())
             .orElseThrow(() -> new IllegalStateException("Holding not found"));
 
         holding.setLocked(holding.getLocked().subtract(order.getSize()));
         holdingRepository.save(holding);
 
         // 2. 지갑에 매도 대금 추가
-        Wallet wallet = walletRepository.findByMemberId(order.getMemberId())
+        Wallet wallet = walletRepository.findByMember(order.getMember())
             .orElseThrow(() -> new IllegalStateException("Wallet not found"));
 
         BigDecimal saleAmount = executionPrice.multiply(order.getSize());
@@ -314,6 +319,7 @@ public class OrderbookService {
     private void notifyOrderExecuted(TradeHistory order) {
         TradeHistoryDto dto = new TradeHistoryDto();
         dto.setId(order.getId());
+        dto.setMemberId(order.getMember().getId());
         dto.setMarket(order.getMarket());
         dto.setSide(order.getSide().name());
         dto.setPrice(order.getPrice());
@@ -322,7 +328,7 @@ public class OrderbookService {
         dto.setRequestAt(order.getRequestAt());
         dto.setMatchedAt(order.getMatchedAt());
 
-        messagingTemplate.convertAndSend("/topic/orders/" + order.getMemberId(), dto);
+        messagingTemplate.convertAndSend("/topic/orders/" + order.getMember().getId(), dto);
     }
 
 
@@ -332,9 +338,11 @@ public class OrderbookService {
         org.springframework.security.core.userdetails.User user
     ) {
         Long memberId = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 비관적 락으로 주문 조회
-        TradeHistory order = tradeHistoryRepository.findByIdAndMemberIdWithLock(orderId, memberId)
+        TradeHistory order = tradeHistoryRepository.findByIdAndMemberWithLock(orderId, member)
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
         // 상태 재확인 (락 이후에도 WAITING인지 확인)
@@ -356,7 +364,7 @@ public class OrderbookService {
     private void refundOrder(TradeHistory order) {
         if (order.getSide() == TradeHistory.Side.BUY) {
             // BUY 주문 취소: locked 자금을 balance로 되돌림
-            Wallet wallet = walletRepository.findByMemberId(order.getMemberId())
+            Wallet wallet = walletRepository.findByMember(order.getMember())
                 .orElseThrow(() -> new IllegalStateException("Wallet not found"));
 
             BigDecimal refundAmount = order.getPrice().multiply(order.getSize());
@@ -366,7 +374,7 @@ public class OrderbookService {
 
         } else {
             // SELL 주문 취소: locked 자산을 size로 되돌림
-            Holding holding = holdingRepository.findByMemberIdAndMarket(order.getMemberId(), order.getMarket())
+            Holding holding = holdingRepository.findByMemberAndMarket(order.getMember(), order.getMarket())
                 .orElseThrow(() -> new IllegalStateException("Holding not found"));
 
             holding.setLocked(holding.getLocked().subtract(order.getSize()));
@@ -379,7 +387,10 @@ public class OrderbookService {
         org.springframework.security.core.userdetails.User user
     ) {
         Long memberId = Long.parseLong(user.getUsername());
-        Optional<List<Holding>> holdings = holdingRepository.findAllByMemberId(memberId);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalStateException("Member not found"));
+
+        Optional<List<Holding>> holdings = holdingRepository.findAllByMember(member);
         if (holdings.isEmpty() || holdings.get().isEmpty()) {
             return Optional.empty();
         } else {
@@ -397,14 +408,17 @@ public class OrderbookService {
         org.springframework.security.core.userdetails.User user
     ) {
         Long memberId = Long.parseLong(user.getUsername());
-        Optional<List<TradeHistory>> tradeHistories = tradeHistoryRepository.findAllByMemberId(memberId);
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalStateException("Member not found"));
+
+        Optional<List<TradeHistory>> tradeHistories = tradeHistoryRepository.findAllByMember(member);
         if (tradeHistories.isEmpty() || tradeHistories.get().isEmpty()) {
             return Optional.empty();
         } else {
             return Optional.of(tradeHistories.get().stream().map(history -> {
                 TradeHistoryDto dto = new TradeHistoryDto();
                 dto.setId(history.getId());
-                dto.setMemberId(history.getMemberId());
+                dto.setMemberId(history.getMember().getId());
                 dto.setMarket(history.getMarket());
                 dto.setSide(history.getSide().name());
                 dto.setPrice(history.getPrice());

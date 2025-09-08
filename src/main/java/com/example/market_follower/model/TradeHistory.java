@@ -18,7 +18,7 @@ public class TradeHistory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
-    private Long memberId;
+    private Member member;
 
     @Column(length = 20, nullable = false)
     private String market;
