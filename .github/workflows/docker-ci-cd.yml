@@ -115,7 +115,7 @@ jobs:
               -e SPRING_REDIS_HOST=127.0.0.1 \
               -e SPRING_REDIS_PORT=6379 \
               -e SPRING_PROFILES_ACTIVE=prod \
-              -e SPRING_KAFKA_PRODUCER_MAX_REQUEST_SIZE=2097152
+              -e SPRING_KAFKA_PRODUCER_MAX_REQUEST_SIZE=2097152 \
               -e JAVA_OPTS="-Xmx2g -Xms1g" \
               ghcr.io/seongjun-working-directories/market-follower:latest
             
