@@ -1,4 +1,4 @@
-package com.example.market_follower.dto.wallet;
+package com.example.market_follower.dto.upbit;
 
 import lombok.*;
 import java.math.BigDecimal;

@@ -28,6 +28,32 @@ CREATE TABLE IF NOT EXISTS wallet (
     CONSTRAINT fk_wallet_member FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
+-- trade_history 테이블 생성
+CREATE TABLE IF NOT EXISTS trade_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    market VARCHAR(20) NOT NULL,
+    side ENUM('BUY', 'SELL') NOT NULL,
+    price DECIMAL(30,8) NOT NULL,
+    size DECIMAL(30,8) NOT NULL,
+    status ENUM('WAITING', 'SUCCESS', 'FAILED') NOT NULL DEFAULT 'WAITING',
+    request_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    matched_at TIMESTAMP NULL,
+    CONSTRAINT fk_trade_member FOREIGN KEY (member_id) REFERENCES member(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- holding 테이블
+CREATE TABLE IF NOT EXISTS holding (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL,
+    market VARCHAR(20) NOT NULL,
+    size DECIMAL(30,8) NOT NULL DEFAULT 0,       -- 사용 가능 수량
+    locked DECIMAL(30,8) NOT NULL DEFAULT 0,     -- 주문 걸린 수량
+    avg_price DECIMAL(30,8) NOT NULL DEFAULT 0,  -- 평균 단가
+    CONSTRAINT uq_member_market UNIQUE (member_id, market),
+    CONSTRAINT fk_holding_member FOREIGN KEY (member_id) REFERENCES member(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 거래 가능 코인 테이블 생성
 CREATE TABLE IF NOT EXISTS tradable_coin (
     market VARCHAR(20) PRIMARY KEY,

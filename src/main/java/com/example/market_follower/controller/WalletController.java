@@ -6,7 +6,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.example.market_follower.dto.wallet.WalletDto;
+
+import com.example.market_follower.dto.upbit.WalletDto;
 import com.example.market_follower.service.WalletService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import com.example.market_follower.dto.wallet.WalletDto;
+import com.example.market_follower.dto.upbit.WalletDto;
 import com.example.market_follower.model.Member;
 import com.example.market_follower.model.Wallet;
 import com.example.market_follower.repository.MemberRepository;
