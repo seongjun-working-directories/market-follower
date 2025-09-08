@@ -92,6 +92,7 @@ jobs:
               --config retention.ms=600000 \
               --config segment.bytes=5242880 \
               --config segment.ms=60000
+              --config max.message.bytes=2097152
             
             # Redis 컨테이너 중지 및 삭제
             docker-compose -f infra/docker-compose.redis.yml down
