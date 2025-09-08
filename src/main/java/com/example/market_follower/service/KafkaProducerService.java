@@ -70,10 +70,18 @@ public class KafkaProducerService {
             String jsonResponse = restTemplate.getForObject(url, String.class);
 
             List<UpbitOrderbookDto> orderbookList = objectMapper.readValue(jsonResponse, new TypeReference<List<UpbitOrderbookDto>>() {});
-            String message = objectMapper.writeValueAsString(orderbookList);
-            kafkaTemplate.send("upbit-orderbook-topic", message);
 
-            log.info("Sent orderbook data for {} coins to Kafka", orderbookList.size());
+            int mid = orderbookList.size() / 2;
+
+            // 첫 번째 절반
+            List<UpbitOrderbookDto> firstHalf = orderbookList.subList(0, mid);
+            kafkaTemplate.send("upbit-orderbook-topic", objectMapper.writeValueAsString(firstHalf));
+
+            // 두 번째 절반
+            List<UpbitOrderbookDto> secondHalf = orderbookList.subList(mid, orderbookList.size());
+            kafkaTemplate.send("upbit-orderbook-topic", objectMapper.writeValueAsString(secondHalf));
+
+            log.info("Sent orderbook data in 2 batches to Kafka, total coins: {}", orderbookList.size());
         } catch (BufferExhaustedException e) {
             log.error("Buffer exhausted: {}", e.getMessage());
             throw e;
