@@ -6,8 +6,10 @@ import com.example.market_follower.dto.MemberLoginResponseDto;
 import com.example.market_follower.exception.DuplicateEmailException;
 import com.example.market_follower.model.Auth;
 import com.example.market_follower.model.Member;
+import com.example.market_follower.model.Wallet;
 import com.example.market_follower.repository.AuthRepository;
 import com.example.market_follower.repository.MemberRepository;
+import com.example.market_follower.repository.WalletRepository;
 import com.example.market_follower.security.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ import java.util.Optional;
 public class AuthService {
     private final MemberRepository memberRepository;
     private final AuthRepository authRepository;
+    private final WalletRepository walletRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
@@ -47,6 +50,11 @@ public class AuthService {
 
         Auth auth = Auth.builder().member(member).role("ROLE_USER").build();
         authRepository.save(auth);
+
+        Wallet wallet = Wallet.builder()
+            .member(member)
+            .build(); // balance는 @Builder.Default로 1억원
+        walletRepository.save(wallet);
     }
 
     public MemberLoginResponseDto loginWithGoogle(String accessToken) {

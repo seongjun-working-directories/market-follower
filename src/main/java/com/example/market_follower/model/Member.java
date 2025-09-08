@@ -24,12 +24,15 @@ public class Member {
     @Column(unique = true)
     private String email;
 
+    @Column(name = "phone_number")
     private String phoneNumber;
 
     private LocalDate birthday;
 
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
     // 저장되기 직전에 자동으로 호출
