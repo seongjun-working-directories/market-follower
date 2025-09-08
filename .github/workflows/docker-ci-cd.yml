@@ -63,14 +63,29 @@ jobs:
             done
             echo "Kafka is ready!"
             
-            # 기존 토픽 삭제  -> 실거래 데이터를 유지하고 싶으면 삭제하지 않고 파티션만 늘리는 --alter 옵션 사용 가능
+            # 기존 upbit-ticker-topic 삭제
             docker exec kafka kafka-topics.sh --delete \
               --topic upbit-ticker-topic \
               --bootstrap-server 127.0.0.1:9092 || true
             
-            # 토픽 재생성 (파티션 3, 복제 1) - 메모리 효율적 설정
+            # upbit-ticker-topic 재생성
             docker exec kafka kafka-topics.sh --create \
               --topic upbit-ticker-topic \
+              --bootstrap-server 127.0.0.1:9092 \
+              --partitions 3 \
+              --replication-factor 1 \
+              --config retention.ms=600000 \
+              --config segment.bytes=5242880 \
+              --config segment.ms=60000
+            
+            # 기존 upbit-orderbook-topic 삭제
+            docker exec kafka kafka-topics.sh --delete \
+              --topic upbit-orderbook-topic \
+              --bootstrap-server 127.0.0.1:9092 || true
+            
+            # upbit-orderbook-topic 재생성
+            docker exec kafka kafka-topics.sh --create \
+              --topic upbit-orderbook-topic \
               --bootstrap-server 127.0.0.1:9092 \
               --partitions 3 \
               --replication-factor 1 \
