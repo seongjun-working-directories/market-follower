@@ -28,6 +28,10 @@ public class Wallet {
     @Column(name = "balance", nullable = false, precision = 30, scale = 8)
     private BigDecimal balance = new BigDecimal("100000000");
 
+    @Builder.Default
+    @Column(name = "locked", nullable = false, precision = 30, scale = 8)
+    private BigDecimal locked = BigDecimal.ZERO;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

@@ -31,6 +31,7 @@ public class WalletService {
                 .walletId(wallet.getId())
                 .memberId(member.getId())
                 .balance(wallet.getBalance())
+                .locked(wallet.getLocked())
                 .build();
     }
 }

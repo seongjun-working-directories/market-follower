@@ -11,4 +11,5 @@ public class WalletDto {
     private Long walletId;
     private Long memberId;
     private BigDecimal balance;
+    private BigDecimal locked;
 }
