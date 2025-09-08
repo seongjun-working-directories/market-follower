@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS auth (
     CONSTRAINT fk_auth_member FOREIGN KEY (member_id) REFERENCES member(id)
 );
 
+-- wallet 테이블 생성
+CREATE TABLE IF NOT EXISTS wallet (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    member_id BIGINT NOT NULL UNIQUE,
+    balance DECIMAL(30,8) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_wallet_member FOREIGN KEY (member_id) REFERENCES member(id)
+);
+
 -- 거래 가능 코인 테이블 생성
 CREATE TABLE IF NOT EXISTS tradable_coin (
     market VARCHAR(20) PRIMARY KEY,
