@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -431,19 +432,15 @@ public class OrderbookService {
         }
     }
 
-    public Optional<UpbitOrderbookDto> getOrderbookByMarket(String market) {
+    public Optional<UpbitOrderbookDto> getOrderbookByMarket(String market) throws JsonProcessingException {
         String key = "upbit:orderbook:" + market;
         String orderbookJson = redisTemplate.opsForValue().get(key);
 
-        try {
-            if (orderbookJson != null) {
-                UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
-                return Optional.of(orderbook);
-            } else {
-                return Optional.empty();
-            }
-        }  catch (JsonProcessingException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse orderbook data", e);
+        if (orderbookJson != null) {
+            UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
+            return Optional.of(orderbook);
+        } else {
+            return Optional.empty();
         }
     }
 }
