@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
 import com.example.market_follower.dto.upbit.TradeRequestDto;
 import com.example.market_follower.dto.upbit.TradeHistoryDto;
+import com.example.market_follower.dto.upbit.UpbitOrderbookDto;
 import com.example.market_follower.dto.upbit.HoldingDto;
 import com.example.market_follower.service.OrderbookService;
 
@@ -469,6 +470,138 @@ public class OrderbookController {
         } catch (Exception e) {
             log.error("Failed to retrieve trade histories for user: {}", user.getUsername(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/get/{market}")
+    @Operation(
+            summary = "특정 마켓 호가 정보 조회",
+            description = """
+            Redis 캐시에서 특정 마켓의 실시간 호가 정보를 조회합니다.
+            
+            **호가 정보 구성:**
+            - market: 마켓 코드 (예: KRW-BTC, KRW-ETH)
+            - timestamp: 데이터 수집 시각 (Unix timestamp)
+            - total_ask_size: 전체 매도 잔량
+            - total_bid_size: 전체 매수 잔량
+            - orderbook_units: 호가 단위별 상세 정보
+            - level: 호가 레벨
+            
+            **호가 단위 정보:**
+            - ask_price: 매도호가 (판매 가격)
+            - bid_price: 매수호가 (구매 가격)
+            - ask_size: 매도 잔량
+            - bid_size: 매수 잔량
+            
+            **데이터 특징:**
+            - Upbit WebSocket으로 데이터를 구독하기 전 초기값을 넣기 위한 데이터
+            - Redis 캐시를 통해 빠른 응답 제공
+            
+            **주의사항:**
+            - 마켓 코드는 대소문자 구분 (예: KRW-BTC)
+            - 지원하지 않는 마켓 코드 입력 시 404 반환
+            - Redis 연결 오류 시 500 반환
+            """
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "호가 정보 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UpbitOrderbookDto.class),
+                            examples = @ExampleObject(
+                                    name = "BTC 호가 정보",
+                                    summary = "KRW-BTC 마켓의 호가 정보 예시",
+                                    value = """
+                                    {
+                                        "market": "KRW-BTC",
+                                        "timestamp": 1757332586602,
+                                        "total_ask_size": 3.58032812,
+                                        "total_bid_size": 1.79065811,
+                                        "orderbook_units": [
+                                            {
+                                                "ask_price": 155978000,
+                                                "bid_price": 155952000,
+                                                "ask_size": 0.00001081,
+                                                "bid_size": 0.03361451
+                                            },
+                                            {
+                                                "ask_price": 155979000,
+                                                "bid_price": 155951000,
+                                                "ask_size": 0.00002154,
+                                                "bid_size": 0.02845123
+                                            }
+                                        ],
+                                        "level": 0
+                                    }
+                                    """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "해당 마켓의 호가 정보를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "마켓 없음",
+                                            summary = "지원하지 않는 마켓 코드",
+                                            value = "null"
+                                    ),
+                                    @ExampleObject(
+                                            name = "잘못된 형식",
+                                            summary = "잘못된 마켓 코드 형식 (예: btc, KRW_BTC)",
+                                            value = "null"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "서버 내부 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Redis 연결 오류",
+                                            summary = "Redis 서버 연결 실패",
+                                            value = "null"
+                                    ),
+                                    @ExampleObject(
+                                            name = "JSON 파싱 오류",
+                                            summary = "캐시된 데이터 파싱 실패",
+                                            value = "null"
+                                    )
+                            }
+                    )
+            )
+    })
+    public ResponseEntity<UpbitOrderbookDto> getOrderbook(
+            @Parameter(
+                    description = "조회할 마켓 코드",
+                    required = true,
+                    examples = {
+                            @ExampleObject(value = "KRW-BTC"),
+                            @ExampleObject(value = "KRW-ETH"),
+                            @ExampleObject(value = "KRW-ADA"),
+                            @ExampleObject(value = "KRW-DOT")
+                    }
+            )
+            @PathVariable String market
+    ) {
+        try {
+            Optional<UpbitOrderbookDto> orderbookData = orderbookService.getOrderbookByMarket(market);
+
+            if (orderbookData.isPresent()) {
+                return ResponseEntity.status(HttpStatus.OK).body(orderbookData.get());
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+        } catch (Exception e) {
+            log.error("Failed to retrieve orderbook for market: {}", market, e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 }

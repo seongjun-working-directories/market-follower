@@ -430,4 +430,16 @@ public class OrderbookService {
             }).toList());
         }
     }
+
+    public Optional<UpbitOrderbookDto> getOrderbookByMarket(String market) {
+        String key = "upbit:orderbook:" + market;
+        String orderbookJson = redisTemplate.opsForValue().get(key);
+
+        if (orderbookJson != null) {
+            UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
+            return Optional.of(orderbook);
+        } else {
+            return Optional.empty();
+        }
+    }
 }

@@ -21,6 +21,7 @@ public class WebSocketController {
             summary = "WebSocket 사용 방법 안내",
             description = """
             실시간 암호화폐 시세, 호가 데이터 및 주문 체결 알림을 구독하는 WebSocket 연결 방법에 대한 설명입니다.
+            웹소켓은 5 ~ 10초 간격으로 데이터를 보내기 때문에 초기 데이터는 무조건 관련 API를 호출하여 먼저 채워주시기 바랍니다.
 
             **접속 URL (SockJS)**
             ```
@@ -43,8 +44,9 @@ public class WebSocketController {
             1. Google OAuth 로그인 → Access Token 발급
             2. `/auth/google` API로 JWT 발급
             3. **최초 화면 로딩 시** REST API(`/market/ticker/all` 또는 `/market/ticker/{market}`)로 초기 시세 데이터를 조회
-            4. WebSocket 연결 시 URL에 `token` 파라미터로 JWT 전달
-            5. 이후 WebSocket 연결로 생성된 구독 채널을 통해 실시간 업데이트 수신
+            4. **최초 화면 로딩 시** REST API(`/orderbook/get/{market}`)로 초기 호가 데이터를 조회
+            5. WebSocket 연결 시 URL에 `token` 파라미터로 JWT 전달
+            6. 이후 WebSocket 연결로 생성된 구독 채널을 통해 실시간 업데이트 수신
             
             **STOMP 구독 채널**
             
