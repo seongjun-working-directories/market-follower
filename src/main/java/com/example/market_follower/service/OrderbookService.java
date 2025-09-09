@@ -328,7 +328,7 @@ public class OrderbookService {
         dto.setRequestAt(order.getRequestAt());
         dto.setMatchedAt(order.getMatchedAt());
 
-        messagingTemplate.convertAndSend("/topic/orders/" + order.getMember().getId(), dto);
+        messagingTemplate.convertAndSend("/topic/orders/" + order.getMember().getEmail(), dto);
     }
 
 
