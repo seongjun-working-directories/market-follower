@@ -59,8 +59,8 @@ public class WebSocketController {
               - 주의: 호가는 개별 코인별로만 제공되며, 전체 일괄 전송은 없음
 
             **3. 주문 체결 알림 채널 (개인별)**
-            - `/topic/orders/{memberId}` : 개인별 주문 체결 알림 (TradeHistoryDto)
-              - JWT에서 추출된 memberId를 사용하여 개인별 채널 구독
+            - `/topic/orders/{email}` : 개인별 주문 체결 알림 (TradeHistoryDto)
+              - JWT에서 추출된 email을 사용하여 개인별 채널 구독
               - 주문이 체결될 때마다 실시간으로 알림 전송
               - 포함 정보: 주문ID, 마켓, 매수/매도, 체결가격, 수량, 상태, 체결시간 등
 
@@ -104,9 +104,9 @@ public class WebSocketController {
                     console.log("BTC 호가:", btcOrderbook.orderbook_units);
                 });
 
-                // 개인 주문 체결 알림 구독 (JWT에서 memberId 추출 필요)
-                const memberId = extractMemberIdFromJWT(jwtToken); // JWT 파싱 함수 필요
-                stompClient.subscribe('/topic/orders/' + memberId, message => {
+                // 개인 주문 체결 알림 구독 (JWT에서 email 추출 필요)
+                const email = extractEmailFromJWT(jwtToken); // JWT 파싱 함수 필요
+                stompClient.subscribe('/topic/orders/' + email, message => {
                     const tradeNotification = JSON.parse(message.body);
                     console.log("주문 체결:", tradeNotification);
                     // 체결 알림 UI 업데이트
@@ -117,11 +117,19 @@ public class WebSocketController {
                 console.error("WebSocket 연결 오류:", error);
             });
 
-            // JWT에서 memberId 추출하는 예시 함수 (실제 구현 필요)
-            function extractMemberIdFromJWT(token) {
+            // JWT에서 email 추출하는 예시 함수 (실제 구현 필요)
+            function extractEmailFromJWT(token) {
                 try {
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    return payload.sub || payload.memberId; // JWT 구조에 따라 조정
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(
+                        atob(base64)
+                            .split('')
+                            .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                            .join('')
+                    );
+                    const payload = JSON.parse(jsonPayload);
+                    return payload?.sub;
                 } catch (e) {
                     console.error("JWT 파싱 오류:", e);
                     return null;
