@@ -47,7 +47,7 @@ public class OrderbookService {
         TradeRequestDto tradeRequestDto
     ) {
         // 1. email 추출 (username으로 사용자 이메일이 저장되어 있기 때문)
-        Long email = Long.parseLong(user.getUsername());
+        String email = user.getUsername();
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
@@ -337,7 +337,7 @@ public class OrderbookService {
         Long orderId,
         org.springframework.security.core.userdetails.User user
     ) {
-        Long email = Long.parseLong(user.getUsername());
+        String email = user.getUsername();
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
@@ -386,7 +386,7 @@ public class OrderbookService {
     public Optional<List<HoldingDto>> getAllHoldings(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long email = Long.parseLong(user.getUsername());
+        String email = user.getUsername();
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
@@ -407,7 +407,7 @@ public class OrderbookService {
     public Optional<List<TradeHistoryDto>> getAllTradeHistories(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long email = Long.parseLong(user.getUsername());
+        String email = user.getUsername();
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
