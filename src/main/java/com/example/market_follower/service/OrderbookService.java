@@ -435,11 +435,15 @@ public class OrderbookService {
         String key = "upbit:orderbook:" + market;
         String orderbookJson = redisTemplate.opsForValue().get(key);
 
-        if (orderbookJson != null) {
-            UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
-            return Optional.of(orderbook);
-        } else {
-            return Optional.empty();
+        try {
+            if (orderbookJson != null) {
+                UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
+                return Optional.of(orderbook);
+            } else {
+                return Optional.empty();
+            }
+        }  catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to parse orderbook data", e);
         }
     }
 }
