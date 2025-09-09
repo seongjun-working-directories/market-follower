@@ -46,9 +46,9 @@ public class OrderbookService {
         org.springframework.security.core.userdetails.User user,
         TradeRequestDto tradeRequestDto
     ) {
-        // 1. memberId 추출 (예: username에 memberId 저장했다고 가정)
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        // 1. email 추출 (username으로 사용자 이메일이 저장되어 있기 때문)
+        Long email = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 2. DTO 검증
@@ -337,8 +337,8 @@ public class OrderbookService {
         Long orderId,
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        Long email = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 비관적 락으로 주문 조회
@@ -386,8 +386,8 @@ public class OrderbookService {
     public Optional<List<HoldingDto>> getAllHoldings(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        Long email = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         Optional<List<Holding>> holdings = holdingRepository.findAllByMember(member);
@@ -407,8 +407,8 @@ public class OrderbookService {
     public Optional<List<TradeHistoryDto>> getAllTradeHistories(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        Long email = Long.parseLong(user.getUsername());
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         Optional<List<TradeHistory>> tradeHistories = tradeHistoryRepository.findAllByMember(member);
