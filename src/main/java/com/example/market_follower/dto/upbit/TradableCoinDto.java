@@ -47,5 +47,6 @@ public class TradableCoinDto {
     private Boolean isCautionGlobalPriceDifferences;
 
     @Schema(description = "소수 계정 집중 여부", example = "false")
+    @JsonProperty("is_caution_concentration_of_small_accounts")
     private Boolean isCautionConcentrationOfSmallAccounts;
 }
