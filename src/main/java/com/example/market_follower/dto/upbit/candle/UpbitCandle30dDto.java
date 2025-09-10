@@ -2,10 +2,7 @@ package com.example.market_follower.dto.upbit.candle;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,7 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Schema(description = "30일 단위 업비트 캔들 DTO")
 public class UpbitCandle30dDto {
-
     @Schema(description = "마켓 코드", example = "KRW-BTC")
     @JsonProperty("market")
     private String market;

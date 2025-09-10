@@ -2,9 +2,13 @@ package com.example.market_follower.dto.upbit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.*;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Schema(description = "Upbit 마켓 정보 DTO")
 public class UpbitMarketApiResponse {
 
