@@ -19,6 +19,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
@@ -129,5 +130,22 @@ public class AuthService {
             log.error("Google 토큰 검증 중 오류 발생", e);
             throw new RuntimeException("Google 토큰 검증 실패", e);
         }
+    }
+
+    @Transactional
+    public void signout(
+        @AuthenticationPrincipal org.springframework.security.core.userdetails.User user
+    ) {
+        String email = user.getUsername();
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("해당 회원을 찾을 수 없습니다."));
+
+        if (!member.getActivated()) {
+            throw new IllegalStateException("이미 탈퇴한 회원입니다.");
+        }
+
+        member.setActivated(false);
+        memberRepository.save(member);
     }
 }

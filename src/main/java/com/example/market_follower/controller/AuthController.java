@@ -8,22 +8,21 @@ import com.example.market_follower.exception.DuplicateEmailException;
 import com.example.market_follower.exception.InvalidGoogleTokenException;
 import com.example.market_follower.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -289,11 +288,73 @@ public class AuthController {
         }
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-        log.error("AuthController에서 예외 발생", e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("인증 처리 중 오류가 발생했습니다");
+    @PutMapping("/signout")
+    @Operation(
+            summary = "회원 탈퇴 (비활성화 처리)",
+            description = """
+                Header의 Authorization 토큰을 기반으로 인증된 사용자의 계정을 비활성화(탈퇴) 처리합니다.
+                JWT를 통해 인증된 사용자만 요청할 수 있으며, 이미 탈퇴된 계정은 다시 탈퇴할 수 없습니다.
+            """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "회원 탈퇴 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "성공",
+                                            summary = "회원 탈퇴 성공",
+                                            value = "회원 탈퇴가 성공적으로 처리되었습니다."
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "요청 오류 (이미 탈퇴했거나 사용자 없음)",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "이미 탈퇴한 회원",
+                                                    summary = "이미 비활성화된 계정",
+                                                    value = "이미 탈퇴한 회원입니다."
+                                            ),
+                                            @ExampleObject(
+                                                    name = "회원 없음",
+                                                    summary = "존재하지 않는 계정",
+                                                    value = "해당 회원을 찾을 수 없습니다."
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "서버 내부 오류",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "서버 오류",
+                                            summary = "예상치 못한 서버 오류",
+                                            value = "회원탈퇴 처리 중 서버 오류가 발생했습니다."
+                                    )
+                            )
+                    )
+            }
+    )
+    public ResponseEntity<?> signout(
+        @Parameter(description = "JWT 인증 사용자 정보", hidden = true)
+        @AuthenticationPrincipal org.springframework.security.core.userdetails.User user
+    ) {
+        try {
+            authService.signout(user);
+            return ResponseEntity.status(HttpStatus.OK).build();
+        } catch (IllegalStateException e) {
+            log.warn("Signout failed (user: {}): {}", user.getUsername(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during signout (user: {})", user.getUsername(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("회원탈퇴 처리 중 서버 오류가 발생했습니다.");
+        }
     }
-
 }
