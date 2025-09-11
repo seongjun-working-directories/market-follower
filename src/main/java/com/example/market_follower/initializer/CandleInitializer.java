@@ -27,10 +27,10 @@ public class CandleInitializer implements ApplicationRunner {
         Thread.sleep(5000);
 
         int currentHour = LocalDateTime.now().getHour();
-        if (currentHour <= 14) {
+        if (currentHour <= 7) {
             candleService.updateAllCandleData();
         } else {
-            log.info(currentHour + "시는 실행 범위(0~14시)가 아니므로 updateAllCandleData 생략");
+            log.info(currentHour + "시는 실행 범위(9~16시)가 아니므로 updateAllCandleData 생략");
         }
     }
 }

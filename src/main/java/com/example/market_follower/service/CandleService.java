@@ -529,76 +529,52 @@ public class CandleService {
     }
 
     // 전체 캔들 데이터를 리턴
-    public Map<String, Object> getAllCandleData() throws IOException {
-        File dir = new File("src/main/resources/candles");
-        if (!dir.exists()) {
-            dir.mkdirs(); // candles 폴더가 없으면 폴더 생성
-        }
+    public Map<String, Object> getAllCandleData(boolean is_krw_market) {
+        Map<String, Object> data = new HashMap<>();
 
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        File file = new File(dir, "candles_" + today + ".json");
-        Map<String, Object> data;
-
-        if (!file.exists()) {
-            data = new HashMap<>();
-            data.put("upbit_candle_7d", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_7d"));
-            data.put("upbit_candle_30d", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_30d"));
-            data.put("upbit_candle_3m", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_3m"));
-            data.put("upbit_candle_1y", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_1y"));
-            data.put("upbit_candle_5y", jdbcTemplate.queryForList("SELECT * FROM upbit_candle_5y"));
-
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
-            log.info("{} 파일 생성 완료", file.getName());
+        if (is_krw_market) {
+            // KRW 마켓만 조회
+            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketStartingWith("KRW-"));
+            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketStartingWith("KRW-"));
+            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketStartingWith("KRW-"));
+            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketStartingWith("KRW-"));
+            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketStartingWith("KRW-"));
         } else {
-            data = objectMapper.readValue(
-                    file, new TypeReference<Map<String, Object>>() {}
-            );
-            log.info("{} 파일 읽기 완료", file.getName());
+            // 비KRW 마켓만 조회
+            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketNotStartingWith("KRW-"));
+            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketNotStartingWith("KRW-"));
+            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketNotStartingWith("KRW-"));
+            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketNotStartingWith("KRW-"));
+            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketNotStartingWith("KRW-"));
         }
 
+        log.info("{} 마켓 전체 캔들 데이터 조회 완료", is_krw_market ? "KRW" : "비KRW");
         return data;
     }
 
-    // 특정 시점 이후의 캔들 데이터를 리턴
-    public Map<String, Object> getAllCandleDataSince(String period) throws IOException {
-        File dir = new File("src/main/resources/candles");
-        if (!dir.exists()) {
-            dir.mkdirs();
+    // 특정 시점 이후 캔들 데이터를 리턴
+    public Map<String, Object> getAllCandleDataSince(String period, boolean is_krw_market) {
+        Map<String, Object> data = new HashMap<>();
+        LocalDateTime fromDateTime = LocalDate.parse(period).atStartOfDay();
+
+        if (is_krw_market) {
+            // KRW 마켓만 조회
+            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+        } else {
+            // 비KRW 마켓만 조회
+            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
         }
 
-        String today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        File file = new File(dir, "candles_" + today + ".json");
-
-        if (!file.exists()) {
-            // 오늘 JSON 파일이 없으면 기존 getAllCandleData로 생성
-            getAllCandleData();
-        }
-
-        Map<String, Object> allData = objectMapper.readValue(
-                file, new TypeReference<Map<String, Object>>() {}
-        );
-
-        LocalDate fromDate = LocalDate.parse(period, DateTimeFormatter.ISO_DATE);
-        Map<String, Object> filteredData = new HashMap<>();
-
-        for (Map.Entry<String, Object> entry : allData.entrySet()) {
-            List<Map<String, Object>> candles = (List<Map<String, Object>>) entry.getValue();
-
-            List<Map<String, Object>> filteredCandles = candles.stream()
-                    .filter(c -> {
-                        // JSON 컬럼에 맞춰서 날짜 추출
-                        String candleDateStr = (String) c.get("candle_date_time_utc");
-                        LocalDate candleDate = LocalDate.parse(
-                                candleDateStr.substring(0, 10), DateTimeFormatter.ISO_DATE
-                        );
-                        return !candleDate.isBefore(fromDate); // fromDate 포함 이후
-                    })
-                    .toList();
-
-            filteredData.put(entry.getKey(), filteredCandles);
-        }
-
-        return filteredData;
+        log.info("{} 마켓 {} 이후 캔들 데이터 조회 완료", is_krw_market ? "KRW" : "비KRW", period);
+        return data;
     }
 
     // 특정 코인의 1 Day 캔들 반환

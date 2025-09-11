@@ -32,6 +32,13 @@ public class CandleController {
             description = "모든 코인의 캔들 데이터를 조회합니다. 앱 최초 다운로드 후 로딩 시 또는 앱 LocalStorage가 비어있을 때 사용합니다.",
             tags = {"데이터 조회"}
     )
+    @Parameter(
+            name = "is_krw_market",
+            description = "KRW 마켓 조회 여부. true: KRW-로 시작하는 마켓만 조회, false: KRW-로 시작하지 않는 마켓만 조회",
+            required = true,
+            example = "true",
+            schema = @Schema(type = "boolean")
+    )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -39,30 +46,56 @@ public class CandleController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = Map.class),
-                            examples = @ExampleObject(
-                                    name = "성공 응답 예시",
-                                    value = """
-                    {
-                      "upbit_candle_7d": [
+                            examples = {
+                                    @ExampleObject(
+                                            name = "KRW 마켓 성공 응답 예시",
+                                            value = """
                         {
-                          "market": "KRW-BTC",
-                          "candle_date_time_utc": "2025-08-29T00:00:00",
-                          "candle_date_time_kst": "2025-08-29T09:00:00",
-                          "opening_price": 85000000.0,
-                          "high_price": 87000000.0,
-                          "low_price": 84000000.0,
-                          "trade_price": 86000000.0,
-                          "candle_acc_trade_price": 1234567890.0,
-                          "candle_acc_trade_volume": 14.35
+                          "upbit_candle_7d": [
+                            {
+                              "market": "KRW-BTC",
+                              "candle_date_time_utc": "2025-08-29T00:00:00",
+                              "candle_date_time_kst": "2025-08-29T09:00:00",
+                              "opening_price": 85000000.0,
+                              "high_price": 87000000.0,
+                              "low_price": 84000000.0,
+                              "trade_price": 86000000.0,
+                              "candle_acc_trade_price": 1234567890.0,
+                              "candle_acc_trade_volume": 14.35
+                            }
+                          ],
+                          "upbit_candle_30d": [...],
+                          "upbit_candle_3m": [...],
+                          "upbit_candle_1y": [...],
+                          "upbit_candle_5y": [...]
                         }
-                      ],
-                      "upbit_candle_30d": [...],
-                      "upbit_candle_3m": [...],
-                      "upbit_candle_1y": [...],
-                      "upbit_candle_5y": [...]
-                    }
-                    """
-                            )
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "비 KRW 마켓 성공 응답 예시",
+                                            value = """
+                        {
+                          "upbit_candle_7d": [
+                            {
+                              "market": "BTC-ETH",
+                              "candle_date_time_utc": "2025-08-29T00:00:00",
+                              "candle_date_time_kst": "2025-08-29T09:00:00",
+                              "opening_price": 0.042,
+                              "high_price": 0.045,
+                              "low_price": 0.041,
+                              "trade_price": 0.043,
+                              "candle_acc_trade_price": 123.456,
+                              "candle_acc_trade_volume": 2845.67
+                            }
+                          ],
+                          "upbit_candle_30d": [...],
+                          "upbit_candle_3m": [...],
+                          "upbit_candle_1y": [...],
+                          "upbit_candle_5y": [...]
+                        }
+                        """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -73,9 +106,9 @@ public class CandleController {
                     )
             )
     })
-    public ResponseEntity<Map<String, Object>> getAllCandleData() {
+    public ResponseEntity<Map<String, Object>> getAllCandleData(@RequestParam boolean is_krw_market) {
         try {
-            Map<String, Object> data = candleService.getAllCandleData();
+            Map<String, Object> data = candleService.getAllCandleData(is_krw_market);
             return ResponseEntity.status(HttpStatus.OK).body(data);
         } catch (Exception e) {
             log.error("Error fetching all candle data", e);
@@ -96,6 +129,13 @@ public class CandleController {
             example = "2025-08-26",
             schema = @Schema(type = "string", format = "date")
     )
+    @Parameter(
+            name = "is_krw_market",
+            description = "KRW 마켓 조회 여부. true: KRW-로 시작하는 마켓만 조회, false: KRW-로 시작하지 않는 마켓만 조회",
+            required = true,
+            example = "true",
+            schema = @Schema(type = "boolean")
+    )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -103,28 +143,52 @@ public class CandleController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = Map.class),
-                            examples = @ExampleObject(
-                                    name = "성공 응답 예시",
-                                    value = """
-                    {
-                      "upbit_candle_7d": [
+                            examples = {
+                                    @ExampleObject(
+                                            name = "KRW 마켓 성공 응답 예시",
+                                            value = """
                         {
-                          "market": "KRW-BTC",
-                          "candle_date_time_utc": "2025-08-26T00:00:00",
-                          "candle_date_time_kst": "2025-08-26T09:00:00",
-                          "opening_price": 85000000.0,
-                          "high_price": 87000000.0,
-                          "low_price": 84000000.0,
-                          "trade_price": 86000000.0
+                          "upbit_candle_7d": [
+                            {
+                              "market": "KRW-BTC",
+                              "candle_date_time_utc": "2025-08-26T00:00:00",
+                              "candle_date_time_kst": "2025-08-26T09:00:00",
+                              "opening_price": 85000000.0,
+                              "high_price": 87000000.0,
+                              "low_price": 84000000.0,
+                              "trade_price": 86000000.0
+                            }
+                          ],
+                          "upbit_candle_30d": [...],
+                          "upbit_candle_3m": [...],
+                          "upbit_candle_1y": [...],
+                          "upbit_candle_5y": [...]
                         }
-                      ],
-                      "upbit_candle_30d": [...],
-                      "upbit_candle_3m": [...],
-                      "upbit_candle_1y": [...],
-                      "upbit_candle_5y": [...]
-                    }
-                    """
-                            )
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "비 KRW 마켓 성공 응답 예시",
+                                            value = """
+                        {
+                          "upbit_candle_7d": [
+                            {
+                              "market": "BTC-ETH",
+                              "candle_date_time_utc": "2025-08-26T00:00:00",
+                              "candle_date_time_kst": "2025-08-26T09:00:00",
+                              "opening_price": 0.042,
+                              "high_price": 0.045,
+                              "low_price": 0.041,
+                              "trade_price": 0.043
+                            }
+                          ],
+                          "upbit_candle_30d": [...],
+                          "upbit_candle_3m": [...],
+                          "upbit_candle_1y": [...],
+                          "upbit_candle_5y": [...]
+                        }
+                        """
+                                    )
+                            }
                     )
             ),
             @ApiResponse(
@@ -138,9 +202,9 @@ public class CandleController {
                     content = @Content(schema = @Schema(implementation = Void.class))
             )
     })
-    public ResponseEntity<Map<String, Object>> getAllCandleDataSince(@RequestParam String period) {
+    public ResponseEntity<Map<String, Object>> getAllCandleDataSince(@RequestParam String period, @RequestParam boolean is_krw_market) {
         try {
-            Map<String, Object> data = candleService.getAllCandleDataSince(period);
+            Map<String, Object> data = candleService.getAllCandleDataSince(period, is_krw_market);
             return ResponseEntity.status(HttpStatus.OK).body(data);
         } catch (Exception e) {
             log.error("Error fetching candle data since {}", period, e);

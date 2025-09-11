@@ -36,4 +36,18 @@ public interface UpbitCandle3mRepository extends JpaRepository<UpbitCandle3m, Lo
     );
 
     void deleteByMarketAndCandleDateTimeUtcBefore(String market, LocalDateTime dateTime);
+
+    // KRW 마켓만 조회
+    List<UpbitCandle3m> findByMarketStartingWith(String prefix);
+
+    // 비KRW 마켓 조회
+    @Query("SELECT u FROM UpbitCandle3m u WHERE u.market NOT LIKE :prefix%")
+    List<UpbitCandle3m> findByMarketNotStartingWith(@Param("prefix") String prefix);
+
+    // KRW 마켓 + 날짜 조건
+    List<UpbitCandle3m> findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual(String prefix, LocalDateTime dateTime);
+
+    // 비KRW 마켓 + 날짜 조건
+    @Query("SELECT u FROM UpbitCandle3m u WHERE u.market NOT LIKE :prefix% AND u.candleDateTimeKst >= :dateTime")
+    List<UpbitCandle3m> findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual(@Param("prefix") String prefix, @Param("dateTime") LocalDateTime dateTime);
 }

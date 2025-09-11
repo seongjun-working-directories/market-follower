@@ -9,11 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 public interface UpbitCandle7dRepository extends JpaRepository<UpbitCandle7d, Long> {
-    boolean existsByMarketAndCandleDateTimeUtc(String market, LocalDateTime candleDateTimeUtc);
-
     @Modifying
     @Transactional
     @Query("DELETE FROM UpbitCandle7d c WHERE c.market NOT IN :markets")
@@ -35,4 +32,18 @@ public interface UpbitCandle7dRepository extends JpaRepository<UpbitCandle7d, Lo
             @Param("end") LocalDateTime end);
 
     void deleteByMarketAndCandleDateTimeUtcBefore(String market, LocalDateTime dateTime);
+
+    // KRW 마켓만 조회
+    List<UpbitCandle7d> findByMarketStartingWith(String prefix);
+
+    // 비KRW 마켓 조회
+    @Query("SELECT u FROM UpbitCandle7d u WHERE u.market NOT LIKE :prefix%")
+    List<UpbitCandle7d> findByMarketNotStartingWith(@Param("prefix") String prefix);
+
+    // KRW 마켓 + 날짜 조건
+    List<UpbitCandle7d> findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual(String prefix, LocalDateTime dateTime);
+
+    // 비KRW 마켓 + 날짜 조건
+    @Query("SELECT u FROM UpbitCandle7d u WHERE u.market NOT LIKE :prefix% AND u.candleDateTimeKst >= :dateTime")
+    List<UpbitCandle7d> findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual(@Param("prefix") String prefix, @Param("dateTime") LocalDateTime dateTime);
 }
