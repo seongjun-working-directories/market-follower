@@ -1,0 +1,49 @@
+# 활성 연결 수 확인
+docker exec kafka netstat -an | grep :9092 | wc -l
+docker exec kafka netstat -an | grep :9092 | head -10
+
+# 토픽의 실제 메시지 수 확인
+docker exec kafka kafka-run-class.sh kafka.tools.GetOffsetShell \
+  --broker-list 127.0.0.1:9092 \
+  --topic upbit-ticker-topic
+
+# 컨슈머 그룹 확인 (혹시 컨슈머가 메시지를 읽지 않고 있는지)
+docker exec kafka kafka-consumer-groups.sh \
+  --bootstrap-server 127.0.0.1:9092 \
+  --list
+
+# 파티션별 로그 크기 확인
+docker exec kafka kafka-log-dirs.sh \
+  --bootstrap-server 127.0.0.1:9092 \
+  --describe \
+  --json
+
+# Kafka 로그에서 메모리 관련 메시지 확인
+docker logs kafka 2>&1 | grep -i -E "memory|heap|gc|out of memory" | tail -20
+
+# 최근 로그 확인
+docker logs kafka --tail 50
+
+# 호스트의 메모리 상태 (Page Cache 포함)
+free -h
+cat /proc/meminfo | grep -E "MemTotal|MemFree|Cached|Buffers"
+
+# 컨테이너 메모리 사용량 세부사항
+docker stats kafka --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}"
+
+# 로그 정리 강제 실행
+docker exec kafka kafka-configs.sh \
+  --bootstrap-server 127.0.0.1:9092 \
+  --entity-type topics \
+  --entity-name upbit-ticker-topic \
+  --alter \
+  --add-config retention.ms=1
+
+# 5초 후 원래 설정으로 복구
+sleep 5
+docker exec kafka kafka-configs.sh \
+  --bootstrap-server 127.0.0.1:9092 \
+  --entity-type topics \
+  --entity-name upbit-ticker-topic \
+  --alter \
+  --add-config retention.ms=600000

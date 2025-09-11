@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS member (
     phone_number VARCHAR(255),
     birthday DATE,
     created_at TIMESTAMP,
-    last_login_at TIMESTAMP
+    last_login_at TIMESTAMP,
+    activated BOOLEAN DEFAULT TRUE
 );
 
 -- auth 테이블 생성

@@ -35,6 +35,9 @@ public class Member {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Builder.Default
+    private Boolean activated = true;
+
     // 저장되기 직전에 자동으로 호출
     @PrePersist
     public void prePersist() {

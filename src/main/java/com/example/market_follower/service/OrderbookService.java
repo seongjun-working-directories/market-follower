@@ -13,6 +13,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,9 +47,9 @@ public class OrderbookService {
         org.springframework.security.core.userdetails.User user,
         TradeRequestDto tradeRequestDto
     ) {
-        // 1. memberId 추출 (예: username에 memberId 저장했다고 가정)
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        // 1. email 추출 (username으로 사용자 이메일이 저장되어 있기 때문)
+        String email = user.getUsername();
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 2. DTO 검증
@@ -328,7 +329,7 @@ public class OrderbookService {
         dto.setRequestAt(order.getRequestAt());
         dto.setMatchedAt(order.getMatchedAt());
 
-        messagingTemplate.convertAndSend("/topic/orders/" + order.getMember().getId(), dto);
+        messagingTemplate.convertAndSend("/topic/orders/" + order.getMember().getEmail(), dto);
     }
 
 
@@ -337,8 +338,8 @@ public class OrderbookService {
         Long orderId,
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        String email = user.getUsername();
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         // 비관적 락으로 주문 조회
@@ -386,8 +387,8 @@ public class OrderbookService {
     public Optional<List<HoldingDto>> getAllHoldings(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        String email = user.getUsername();
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         Optional<List<Holding>> holdings = holdingRepository.findAllByMember(member);
@@ -407,8 +408,8 @@ public class OrderbookService {
     public Optional<List<TradeHistoryDto>> getAllTradeHistories(
         org.springframework.security.core.userdetails.User user
     ) {
-        Long memberId = Long.parseLong(user.getUsername());
-        Member member = memberRepository.findById(memberId)
+        String email = user.getUsername();
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Member not found"));
 
         Optional<List<TradeHistory>> tradeHistories = tradeHistoryRepository.findAllByMember(member);
@@ -428,6 +429,18 @@ public class OrderbookService {
                 dto.setMatchedAt(history.getMatchedAt());
                 return dto;
             }).toList());
+        }
+    }
+
+    public Optional<UpbitOrderbookDto> getOrderbookByMarket(String market) throws JsonProcessingException {
+        String key = "upbit:orderbook:" + market;
+        String orderbookJson = redisTemplate.opsForValue().get(key);
+
+        if (orderbookJson != null) {
+            UpbitOrderbookDto orderbook = objectMapper.readValue(orderbookJson, UpbitOrderbookDto.class);
+            return Optional.of(orderbook);
+        } else {
+            return Optional.empty();
         }
     }
 }

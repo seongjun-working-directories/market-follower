@@ -1,9 +1,10 @@
 package com.example.market_follower.service;
 
-import com.example.market_follower.controller.AuthController;
 import com.example.market_follower.dto.GoogleUserInfoDto;
 import com.example.market_follower.dto.MemberLoginResponseDto;
+import com.example.market_follower.dto.SignupRequest;
 import com.example.market_follower.exception.DuplicateEmailException;
+import com.example.market_follower.exception.InvalidGoogleTokenException;
 import com.example.market_follower.model.Auth;
 import com.example.market_follower.model.Member;
 import com.example.market_follower.model.Wallet;
@@ -18,10 +19,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Slf4j
@@ -34,7 +37,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Transactional
-    public void signup(AuthController.SignupRequest request) {
+    public void signup(SignupRequest request) {
         if (memberRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException(request.getEmail());
         }
@@ -67,6 +70,16 @@ public class AuthService {
 
             if (optionalMember.isPresent()) {
                 Member member = optionalMember.get();
+
+                // 비활성화된 사용자는 로그인 불가
+                if (!member.getActivated()) {
+                    throw new RuntimeException("비활성화된 계정입니다");
+                }
+
+                // lastLoginAt 업데이트
+                member.setLastLoginAt(LocalDateTime.now());
+                memberRepository.save(member);
+
                 String jwt = jwtTokenProvider.generateToken(member.getEmail());
 
                 return MemberLoginResponseDto.builder()
@@ -109,10 +122,30 @@ public class AuthService {
 
         } catch (HttpClientErrorException e) {
             log.error("Google API 호출 실패: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("유효하지 않은 Google Access Token", e);
+            if (e.getStatusCode().is4xxClientError()) {
+                throw new InvalidGoogleTokenException("유효하지 않은 Google Access Token", e);
+            }
+            throw new RuntimeException("Google API 호출 중 클라이언트 오류 발생", e);
         } catch (Exception e) {
             log.error("Google 토큰 검증 중 오류 발생", e);
             throw new RuntimeException("Google 토큰 검증 실패", e);
         }
+    }
+
+    @Transactional
+    public void signout(
+        @AuthenticationPrincipal org.springframework.security.core.userdetails.User user
+    ) {
+        String email = user.getUsername();
+
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("해당 회원을 찾을 수 없습니다."));
+
+        if (!member.getActivated()) {
+            throw new IllegalStateException("이미 탈퇴한 회원입니다.");
+        }
+
+        member.setActivated(false);
+        memberRepository.save(member);
     }
 }
