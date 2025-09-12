@@ -3,6 +3,7 @@ package com.example.market_follower.service;
 import com.example.market_follower.dto.GoogleUserInfoDto;
 import com.example.market_follower.dto.MemberLoginResponseDto;
 import com.example.market_follower.dto.SignupRequest;
+import com.example.market_follower.exception.DeactivatedAccountException;
 import com.example.market_follower.exception.DuplicateEmailException;
 import com.example.market_follower.exception.InvalidGoogleTokenException;
 import com.example.market_follower.model.Auth;
@@ -73,7 +74,7 @@ public class AuthService {
 
                 // 비활성화된 사용자는 로그인 불가
                 if (!member.getActivated()) {
-                    throw new RuntimeException("비활성화된 계정입니다");
+                    throw new DeactivatedAccountException(member.getEmail() + "은 비활성화된 계정입니다.");
                 }
 
                 // lastLoginAt 업데이트
@@ -96,6 +97,12 @@ public class AuthService {
                         .name(googleUserInfo.getName())
                         .build();
             }
+        } catch (DeactivatedAccountException e) {
+            log.warn("비활성화 계정 로그인 시도", e);
+            throw e;
+        } catch (InvalidGoogleTokenException e) {
+            log.warn("유효하지 않은 구글 토큰으로 로그인 시도", e);
+            throw e;
         } catch (Exception e) {
             log.error("Google 로그인 처리 중 오류 발생", e);
             throw new RuntimeException("Google 로그인 처리 실패", e);

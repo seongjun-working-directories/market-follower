@@ -163,10 +163,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.OK).body(memberLoginResponseDto);
         } catch (DeactivatedAccountException e) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(e.getMessage());
-
         } catch (InvalidGoogleTokenException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
-
         } catch (Exception e) {
             log.error("Google 인증 처리 중 예상치 못한 오류 발생", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
