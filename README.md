@@ -12,27 +12,30 @@
 ## 🚀 주요 기능
 
 ### 📊 실시간 데이터
-- **실시간 암호화폐 시세** - 업비트 500여개 코인 현재가 정보
+- **실시간 암호화폐 시세** - 업비트 600여개 코인 현재가 정보
 - **실시간 호가 데이터** - 매수/매도 호가 10단계 정보
 - **WebSocket 스트리밍** - 10초마다 최신 시세/호가 자동 업데이트
-- **빠른 응답** - Redis 캐시로 밀리초 단위 응답
+- **빠른 응답** - Redis 캐시로 밀리초 단위 응답 (TTL: 3분)
 
 ### 📈 차트 데이터
-- **다양한 시간대** - 7일, 30일, 3개월, 1년, 5년 캔들 데이터
-- **실시간 캔들** - 5분마다 최신 캔들 업데이트
-- **데이터 최적화** - 기간별 최적화된 캔들 간격 (1시간~1주)
+- **다양한 시간대** - 7일(1시간), 30일(4시간), 3개월(1일), 1년(1일), 5년(1주) 캔들 데이터
+- **실시간 5분 캔들** - 5분마다 최신 5분봉 업데이트 및 Redis 저장
+- **당일 캔들 데이터** - 00시부터 현재까지 모든 5분봉 데이터 제공
+- **자동 데이터 정리** - 매일 08:58 Redis 캔들 데이터 정리
 
 ### 💰 가상 거래 시스템
 - **매수/매도 주문** - 실제 거래소와 유사한 주문 시스템
-- **자동 체결** - 5초마다 호가 기준 자동 체결
-- **포트폴리오 관리** - 보유 코인 및 수익률 추적
+- **자동 체결** - 5초마다 호가 기준 자동 체결 확인
+- **포트폴리오 관리** - 보유 코인 및 평균 매수가 추적
 - **거래 내역** - 전체 주문/체결 내역 조회
-- **실시간 알림** - 주문 체결 시 WebSocket 알림
+- **실시간 알림** - 주문 체결 시 개인별 WebSocket 알림
+- **주문 취소** - 대기 중인 주문 실시간 취소 기능
 
 ### 🔐 사용자 관리
 - **구글 소셜 로그인** - 간편한 OAuth2 인증
 - **JWT 토큰 인증** - 안전한 API 접근 관리
-- **개인별 지갑** - KRW 잔액 및 암호화폐 보유량 관리
+- **개인별 지갑** - KRW 잔액 및 암호화폐 보유량 관리 (기본 1억원 지급)
+- **계정 탈퇴** - 소프트 삭제 방식으로 계정 비활성화
 
 ## 🛠 기술 스택
 
@@ -57,7 +60,9 @@ GET  /market/list               # 거래 가능한 코인 목록
 GET  /market/ticker/{market}    # 특정 코인 현재가
 GET  /market/ticker/all         # 전체 코인 현재가
 GET  /candle/all                # 전체 캔들 데이터
-GET  /candle/daily?market=      # 특정 코인 일별 캔들
+GET  /candle/all?period=yyyy-MM-dd&is_krw_market=true  # 특정 날짜 이후 캔들 데이터
+GET  /candle/daily?market=      # 특정 코인 당일 5분봉 데이터
+GET  /orderbook/{market}        # 특정 코인 호가 정보
 ```
 
 ### 🔐 인증 API
@@ -65,6 +70,7 @@ GET  /candle/daily?market=      # 특정 코인 일별 캔들
 ```http
 POST /auth/google               # 구글 로그인
 POST /auth/signup               # 회원가입
+POST /auth/signout              # 회원 탈퇴
 ```
 
 ### 💰 지갑 및 거래 API
@@ -108,9 +114,9 @@ stompClient.subscribe('/topic/orderbook/KRW-BTC', message => {
 
 #### 3. 주문 체결 알림 채널 (개인별)
 ```javascript
-// 개인 주문 체결 알림 구독
-const memberId = extractMemberIdFromJWT(jwtToken);
-stompClient.subscribe(`/topic/orders/${memberId}`, message => {
+// 개인 주문 체결 알림 구독 (이메일 기반)
+const userEmail = extractEmailFromJWT(jwtToken);
+stompClient.subscribe(`/topic/orders/${userEmail}`, message => {
     const tradeNotification = JSON.parse(message.body);
     console.log('주문 체결:', tradeNotification);
     // 실시간으로 포트폴리오 업데이트
@@ -176,8 +182,10 @@ docker-compose up -d
 | 실시간 시세 | 실시간 | 10초마다 | 600개 코인 현재가 |
 | 호가 데이터 | 실시간 | 10초마다 | 매수/매도 호가 10단계 |
 | 주문 체결 확인 | - | 5초마다 | 대기 주문 체결 조건 확인 |
-| 캔들 데이터 | 매일 09:05 | - | 전체 기간별 캔들 동기화 |
+| 5분 캔들 데이터 | - | 5분마다 | 당일 5분봉 Redis 업데이트 |
+| 캔들 데이터 동기화 | 매일 09:05 | - | 전체 기간별 캔들 동기화 |
 | 거래 코인 목록 | 매일 08:40 | - | 신규/상장폐지 코인 업데이트 |
+| Redis 캔들 정리 | 매일 08:58 | - | 전일 5분봉 데이터 삭제 |
 
 ## 💾 데이터베이스 설계
 
@@ -186,7 +194,7 @@ docker-compose up -d
 ### 주요 테이블 구조
 
 #### 사용자 관리
-- **`member`** - 사용자 기본 정보 (이름, 이메일, 가입일 등)
+- **`member`** - 사용자 기본 정보 (이름, 이메일, 가입일, 활성화 상태)
 - **`auth`** - 사용자 권한 정보 (역할 기반 접근 제어)
 - **`wallet`** - 개인별 KRW 지갑 (잔액, 주문 잠금 자금)
 
@@ -199,24 +207,22 @@ docker-compose up -d
 - **`upbit_ticker`** - 실시간 시세 정보
 - **`upbit_candle_*`** - 기간별 캔들 데이터 (7d, 30d, 3m, 1y, 5y)
 
-### 데이터 볼륨
-- **시세 데이터**: 약 600개 코인 × 실시간 업데이트
-- **캔들 데이터**: 약 500,000+ 레코드 (5개 기간 × 600개 코인 × 365일)
-- **거래 데이터**: 사용자별 무제한 (자동 파티셔닝 고려 중)
+### 캔들 데이터 저장 전략
 
-## 🔧 주요 설정
+| 테이블 | 기간 | 캔들 간격 | 보존 범위 | 예상 레코드 수 |
+|--------|------|-----------|-----------|----------------|
+| upbit_candle_7d | 7일 | 1시간 | 오늘 기준 정확히 7일 | 168 × 600코인 |
+| upbit_candle_30d | 30일 | 4시간 | 오늘 기준 정확히 30일 | 180 × 600코인 |
+| upbit_candle_3m | 3개월 | 1일 | 오늘 기준 정확히 90일 | 90 × 600코인 |
+| upbit_candle_1y | 1년 | 1일 | 오늘 기준 정확히 365일 | 365 × 600코인 |
+| upbit_candle_5y | 5년 | 1주 | 오늘 기준 정확히 5년 | 260 × 600코인 |
 
 ### Redis 캐시 구조
 ```
 upbit:ticker:{MARKET}           # 시세 데이터 (TTL: 3분)
 upbit:orderbook:{MARKET}        # 호가 데이터 (TTL: 3분)
-upbit:candle:1d:{MARKET}        # 일별 캔들 (TTL: 24시간)
+upbit:daily:{MARKET}            # 당일 5분봉 데이터
 ```
-
-### 환경별 설정
-- **개발환경**: H2 인메모리 DB, 로컬 Redis
-- **스테이징**: MySQL 8.0, Redis Cluster
-- **운영환경**: AWS RDS MySQL, AWS ElastiCache
 
 ## 🎮 가상 거래 시스템
 
@@ -227,8 +233,8 @@ upbit:candle:1d:{MARKET}        # 일별 캔들 (TTL: 24시간)
 2. 주문 금액만큼 balance → locked 이동
 3. 주문 상태 WAITING으로 데이터베이스 저장
 4. 5초마다 체결 조건 확인 (매도호가 ≤ 주문가격)
-5. 체결 시 locked 차감, 보유량 증가, 평균단가 재계산
-6. WebSocket으로 체결 알림 전송
+5. 체결 시 실제 체결가로 정산, locked 차감, 보유량 증가
+6. 평균 매수가 재계산 및 WebSocket 알림 전송
 
 #### 매도 주문
 1. 보유 수량 확인 (size ≤ holding.size)
@@ -243,6 +249,11 @@ upbit:candle:1d:{MARKET}        # 일별 캔들 (TTL: 24시간)
 - **SUCCESS**: 체결 완료
 - **FAILED**: 체결 실패 (시스템 오류)
 - **CANCELLED**: 사용자 취소
+
+### 동시성 제어
+- 비관적 락을 이용한 주문 처리
+- 체결/취소 시 주문 상태 재확인
+- 자금 반환 로직을 통한 데이터 정합성 보장
 
 ## 📡 WebSocket 연결 가이드
 
@@ -305,6 +316,22 @@ stompClient.connect({}, () => {
 }
 ```
 
+#### 당일 5분봉 캔들 데이터
+```json
+[
+    {
+        "market": "KRW-BTC",
+        "candle_date_time_kst": "2025-09-13T09:00:00",
+        "opening_price": 50000000.0,
+        "high_price": 50100000.0,
+        "low_price": 49900000.0,
+        "trade_price": 50050000.0,
+        "candle_acc_trade_volume": 1.23456789,
+        "unit": 5
+    }
+]
+```
+
 ## 🚀 배포
 
 ### GitHub Actions CI/CD
@@ -339,6 +366,7 @@ stompClient.connect({}, () => {
 - **권한**: Spring Security Role-Based Access Control
 - **API 보호**: Rate Limiting, CORS 설정
 - **데이터 암호화**: 민감 정보 AES-256 암호화
+- **계정 보안**: 구글 OAuth2 인증, 계정 비활성화 방식 탈퇴
 
 ### 개발 규칙
 - **커밋 메시지**: Conventional Commits 형식
