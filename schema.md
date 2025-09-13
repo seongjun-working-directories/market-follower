@@ -13,7 +13,8 @@
 │ - email     │      │ - role      │      │ - balance   │
 │ - phone     │      │             │      │ - locked    │
 │ - birthday  │      └─────────────┘      │             │
-│ - created_at│                           └─────────────┘
+│ - activated │                           └─────────────┘
+│ - created_at│
 │ - last_login│
 └─────────────┘
        │
@@ -88,6 +89,7 @@
 | `birthday` | DATE | | 생년월일 |
 | `created_at` | TIMESTAMP | | 가입 일시 |
 | `last_login_at` | TIMESTAMP | | 최종 로그인 일시 |
+| `activated` | BOOLEAN | DEFAULT TRUE | 계정 활성화 상태 |
 
 ```sql
 CREATE TABLE IF NOT EXISTS member (
@@ -97,7 +99,8 @@ CREATE TABLE IF NOT EXISTS member (
     phone_number VARCHAR(255),
     birthday DATE,
     created_at TIMESTAMP,
-    last_login_at TIMESTAMP
+    last_login_at TIMESTAMP,
+    activated BOOLEAN DEFAULT TRUE
 );
 ```
 
@@ -291,6 +294,44 @@ CREATE TABLE IF NOT EXISTS tradable_coin (
 | `lowest_52_week_date` | VARCHAR(255) | | 52주 신저가 달성일 |
 | `upbit_timestamp` | BIGINT | | 타임스탬프 |
 
+```sql
+CREATE TABLE IF NOT EXISTS upbit_ticker (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    market VARCHAR(255),
+
+    trade_date VARCHAR(255),
+    trade_time VARCHAR(255),
+    trade_date_kst VARCHAR(255),
+    trade_time_kst VARCHAR(255),
+    trade_timestamp BIGINT,
+
+    opening_price DOUBLE,
+    high_price DOUBLE,
+    low_price DOUBLE,
+    trade_price DOUBLE,
+    prev_closing_price DOUBLE,
+
+    change_direction VARCHAR(255),
+    change_price DOUBLE,
+    change_rate DOUBLE,
+    signed_change_price DOUBLE,
+    signed_change_rate DOUBLE,
+
+    trade_volume DOUBLE,
+    acc_trade_price DOUBLE,
+    acc_trade_price_24h DOUBLE,
+    acc_trade_volume DOUBLE,
+    acc_trade_volume_24h DOUBLE,
+
+    highest_52_week_price DOUBLE,
+    highest_52_week_date VARCHAR(255),
+    lowest_52_week_price DOUBLE,
+    lowest_52_week_date VARCHAR(255),
+
+    upbit_timestamp BIGINT
+);
+```
+
 #### `upbit_candle_7d` - 7일간 1시간 단위 캔들
 최근 7일간의 1시간 단위 캔들 데이터를 저장합니다. (168개 × 600코인 = 약 100,800개 레코드)
 
@@ -330,13 +371,41 @@ CREATE TABLE IF NOT EXISTS upbit_candle_7d (
 
     PRIMARY KEY (id),
     UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='7일간 1시간 단위 캔들 데이터 (168개 × 600코인 = 약 100,800개 레코드)';
 ```
 
 #### `upbit_candle_30d` - 30일간 4시간 단위 캔들
 최근 30일간의 4시간 단위 캔들 데이터를 저장합니다. (180개 × 600코인 = 약 108,000개 레코드)
 
 구조는 `upbit_candle_7d`와 동일하며, `unit` 필드가 240(분)으로 설정됩니다.
+
+```sql
+CREATE TABLE IF NOT EXISTS upbit_candle_30d (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    unit INT NOT NULL DEFAULT 240 COMMENT '분 단위 (240분)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='30일간 4시간 단위 캔들 데이터 (180개 × 600코인 = 약 108,000개 레코드)';
+```
 
 #### `upbit_candle_3m` - 3개월간 일 단위 캔들
 최근 3개월간의 일 단위 캔들 데이터를 저장합니다. (90개 × 600코인 = 약 54,000개 레코드)
@@ -349,20 +418,72 @@ CREATE TABLE IF NOT EXISTS upbit_candle_7d (
 | `change_price` | DECIMAL(20,8) | NULL | 전일 대비 변화 금액 |
 | `change_rate` | DECIMAL(10,8) | NULL | 전일 대비 변화율 |
 
+```sql
+CREATE TABLE IF NOT EXISTS upbit_candle_3m (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    prev_closing_price DECIMAL(20,8) NULL COMMENT '전일 종가',
+    change_price DECIMAL(20,8) NULL COMMENT '전일 대비 변화 금액',
+    change_rate DECIMAL(10,8) NULL COMMENT '전일 대비 변화율',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='3개월간 일 단위 캔들 데이터 (90개 × 600코인 = 약 54,000개 레코드)';
+```
+
 #### `upbit_candle_1y` - 1년간 일 단위 캔들
 최근 1년간의 일 단위 캔들 데이터를 저장합니다. (365개 × 600코인 = 약 219,000개 레코드)
 
 구조는 `upbit_candle_3m`과 동일합니다.
 
-#### `upbit_candle_5y` - 5년간 주 단위 캔들
-최근 5년간의 주 단위 캔들 데이터를 저장합니다. (260주 × 600코인 = 약 156,000개 레코드)
+```sql
+CREATE TABLE IF NOT EXISTS upbit_candle_1y (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    market VARCHAR(20) NOT NULL COMMENT '마켓명 (KRW-BTC)',
+    candle_date_time_utc DATETIME NOT NULL COMMENT '캔들 기준 시각 (UTC)',
+    candle_date_time_kst DATETIME NOT NULL COMMENT '캔들 기준 시각 (KST)',
+    opening_price DECIMAL(20,8) NOT NULL COMMENT '시가',
+    high_price DECIMAL(20,8) NOT NULL COMMENT '고가',
+    low_price DECIMAL(20,8) NOT NULL COMMENT '저가',
+    trade_price DECIMAL(20,8) NOT NULL COMMENT '종가',
+    timestamp BIGINT NOT NULL COMMENT '마지막 틱 저장 시각',
+    candle_acc_trade_price DECIMAL(30,8) NOT NULL COMMENT '누적 거래 금액',
+    candle_acc_trade_volume DECIMAL(30,8) NOT NULL COMMENT '누적 거래량',
+    prev_closing_price DECIMAL(20,8) NULL COMMENT '전일 종가',
+    change_price DECIMAL(20,8) NULL COMMENT '전일 대비 변화 금액',
+    change_rate DECIMAL(10,8) NULL COMMENT '전일 대비 변화율',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성 시각',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시각',
 
-기본 캔들 데이터에 추가로 다음 컬럼을 포함합니다:
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci
+COMMENT='1년간 일 단위 캔들 데이터 (365개 × 600코인 = 약 219,000개 레코드)';
+
+#### `upbit_candle_5y` - 5년간 주 단위 캔들
+최근 5년간의 주 단위 캔들 데이터를 저장합니다. (365주 × 600코인 = 약 219,000개 레코드)
+
+주 단위 캔들 데이터에는 추가로 다음 컬럼을 포함합니다:
 
 | 컬럼명 | 타입 | 제약조건 | 설명 |
 |--------|------|----------|------|
 | `first_day_of_period` | DATE | NULL | 캔들 기간의 가장 첫 날 |
-
 ```sql
 CREATE TABLE IF NOT EXISTS upbit_candle_5y (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -382,49 +503,72 @@ CREATE TABLE IF NOT EXISTS upbit_candle_5y (
 
     PRIMARY KEY (id),
     UNIQUE KEY uk_market_datetime (market, candle_date_time_utc)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='5년간 주 단위 캔들 데이터 (365주 × 600코인 = 약 219,000개 레코드)';
+📋 데이터 관리 정책
+🔄 데이터 보존 및 갱신 주기
+캔들 데이터 관리
 
-## 📈 캔들 데이터 저장 전략
+7일 캔들 (1시간): 매시간 갱신, 7일 초과 데이터 자동 삭제
+30일 캔들 (4시간): 4시간마다 갱신, 30일 초과 데이터 자동 삭제
+3개월 캔들 (일): 일 1회 갱신, 90일 초과 데이터 자동 삭제
+1년 캔들 (일): 일 1회 갱신, 365일 초과 데이터 자동 삭제
+5년 캔들 (주): 주 1회 갱신, 5년 초과 데이터 자동 삭제
 
-### 데이터 수집 주기
-- **실시간 데이터**: `upbit_ticker` - 10초마다 업데이트
-- **7일 캔들**: 1시간마다 업데이트
-- **30일 캔들**: 4시간마다 업데이트
-- **3개월/1년 캔들**: 1일마다 업데이트
-- **5년 캔들**: 1주마다 업데이트
+실시간 데이터 관리
 
-### 데이터 용량 관리
-- 각 테이블별로 적절한 데이터 보존 주기 설정
-- 오래된 데이터는 별도 아카이브 테이블로 이관
-- 인덱스 최적화를 통한 조회 성능 향상
+Ticker 데이터: 실시간 갱신 (WebSocket)
+거래 가능 코인 정보: 일 1회 갱신
 
-### 주요 인덱스
-```sql
--- 캔들 데이터 조회 최적화
+🔍 인덱싱 전략
+필수 인덱스
+sql-- 캔들 데이터 조회 최적화
 CREATE INDEX idx_market_datetime ON upbit_candle_7d (market, candle_date_time_utc);
 CREATE INDEX idx_market_datetime ON upbit_candle_30d (market, candle_date_time_utc);
 CREATE INDEX idx_market_datetime ON upbit_candle_3m (market, candle_date_time_utc);
 CREATE INDEX idx_market_datetime ON upbit_candle_1y (market, candle_date_time_utc);
 CREATE INDEX idx_market_datetime ON upbit_candle_5y (market, candle_date_time_utc);
 
--- 사용자 데이터 조회 최적화
-CREATE INDEX idx_member_market ON holding (member_id, market);
+-- 사용자 거래 내역 조회 최적화
+CREATE INDEX idx_member_market ON trade_history (member_id, market);
 CREATE INDEX idx_member_status ON trade_history (member_id, status);
-```
 
-## 🔐 보안 고려사항
+-- 보유량 조회 최적화
+CREATE INDEX idx_member_holding ON holding (member_id);
+📊 예상 데이터 볼륨
+테이블명예상 레코드 수설명member10,000+사용자 증가에 따른 선형 증가auth10,000+member와 1:1 관계wallet10,000+member와 1:1 관계holding100,000+사용자당 평균 10개 코인 보유 가정trade_history1,000,000+사용자당 월 100건 거래 가정tradable_coin600업비트 거래 가능 코인 수upbit_ticker600실시간 갱신, 코인 수와 동일upbit_candle_7d~100,800168시간 × 600코인upbit_candle_30d~108,000180개 × 600코인upbit_candle_3m~54,00090일 × 600코인upbit_candle_1y~219,000365일 × 600코인upbit_candle_5y~219,000365주 × 600코인
+🔒 데이터 무결성 제약사항
+비즈니스 규칙
 
-### 민감 데이터 보호
-- 사용자 개인정보는 암호화하여 저장
-- 거래 내역은 무결성 검증을 위한 해시값 포함 검토
-- 데이터베이스 접근 권한 최소화
+지갑 잔액 규칙: wallet.balance + wallet.locked >= 0
+보유량 규칙: holding.size + holding.locked >= 0
+거래 내역 일관성: 체결된 거래는 지갑/보유량과 일치해야 함
+평균 매수가 정확성: 매수 체결 시 가중평균으로 재계산
 
-### 데이터 백업
-- 일일 전체 백업
-- 실시간 트랜잭션 로그 백업
-- 주요 테이블별 별도 백업 전략 수립
+참조 무결성
 
----
+모든 member_id 외래키는 CASCADE DELETE 설정
+캔들 데이터의 market은 tradable_coin.market과 일치해야 함
 
-> **주의사항**: 이 스키마는 Market Follower 서비스의 초기 버전이며, 서비스 확장에 따라 추가 테이블 및 컬럼이 필요할 수 있습니다.
+🚀 성능 최적화 고려사항
+파티셔닝 전략
+대용량 테이블에 대한 파티셔닝 고려:
+sql-- 거래 내역 월별 파티셔닝 예시
+ALTER TABLE trade_history 
+PARTITION BY RANGE (YEAR(request_at) * 100 + MONTH(request_at)) (
+    PARTITION p202401 VALUES LESS THAN (202402),
+    PARTITION p202402 VALUES LESS THAN (202403),
+    -- ...
+);
+캐싱 전략
+
+Redis 캐시: 실시간 시세, 사용자 세션
+애플리케이션 레벨: 거래 가능 코인 목록, 설정 정보
+
+백업 전략
+
+실시간 백업: 사용자 관련 테이블 (member, wallet, holding, trade_history)
+주기적 백업: 시장 데이터 테이블 (캔들 데이터)
+아카이빙: 90일 이상된 거래 내역 별도 보관
