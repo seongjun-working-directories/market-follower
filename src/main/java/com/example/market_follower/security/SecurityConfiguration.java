@@ -47,6 +47,10 @@ public class SecurityConfiguration {
 
                         .requestMatchers("/auth/**").permitAll()
 
+                        // 부하 테스트를 위한 허용
+                        .requestMatchers("/market/ticker/all").permitAll()
+                        .requestMatchers("/candle/all").permitAll()
+
                         .requestMatchers("/member/**").hasAuthority("ROLE_ADMIN")
 
                         .anyRequest().authenticated()

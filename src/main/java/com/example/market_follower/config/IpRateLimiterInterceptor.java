@@ -14,7 +14,9 @@ import java.time.Duration;
 public class IpRateLimiterInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate redisTemplate;
-    private static final int MAX_REQUESTS = 20; // 분당 최대 20회
+
+    // 부하테스트를 위한 허용 20회 -> 2000회
+    private static final int MAX_REQUESTS = 2000; // 분당 최대 20회
     private static final Duration WINDOW = Duration.ofMinutes(1);
 
     public IpRateLimiterInterceptor(StringRedisTemplate redisTemplate) {
