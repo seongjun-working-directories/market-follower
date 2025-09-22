@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -28,8 +29,8 @@ public class CandleController {
 
     @GetMapping("/all")
     @Operation(
-            summary = "전체 캔들 데이터 조회",
-            description = "모든 코인의 캔들 데이터를 조회합니다. 앱 최초 다운로드 후 로딩 시 또는 앱 LocalStorage가 비어있을 때 사용합니다.",
+            summary = "전체 캔들 데이터 조회 (비동기)",
+            description = "모든 코인의 캔들 데이터를 비동기로 조회합니다. 앱 최초 다운로드 후 로딩 시 또는 앱 LocalStorage가 비어있을 때 사용합니다.",
             tags = {"데이터 조회"}
     )
     @Parameter(
@@ -106,20 +107,19 @@ public class CandleController {
                     )
             )
     })
-    public ResponseEntity<Map<String, Object>> getAllCandleData(@RequestParam boolean is_krw_market) {
-        try {
-            Map<String, Object> data = candleService.getAllCandleData(is_krw_market);
-            return ResponseEntity.status(HttpStatus.OK).body(data);
-        } catch (Exception e) {
-            log.error("Error fetching all candle data", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    public CompletableFuture<ResponseEntity<Map<String, Object>>> getAllCandleData(@RequestParam boolean is_krw_market) {
+        return candleService.getAllCandleDataAsync(is_krw_market)
+                .thenApply(data -> ResponseEntity.status(HttpStatus.OK).body(data))
+                .exceptionally(ex -> {
+                    log.error("Error fetching all candle data");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+                });
     }
 
     @GetMapping("/since")
     @Operation(
-            summary = "특정 시점 이후 캔들 데이터 조회",
-            description = "지정된 날짜 이후의 캔들 데이터를 조회합니다. 그 날 최초 로그인 시 사용합니다.",
+            summary = "특정 시점 이후 캔들 데이터 조회 (비동기)",
+            description = "지정된 날짜 이후의 캔들 데이터를 비동기로 조회합니다. 그 날 최초 로그인 시 사용합니다.",
             tags = {"데이터 조회"}
     )
     @Parameter(
@@ -202,14 +202,13 @@ public class CandleController {
                     content = @Content(schema = @Schema(implementation = Void.class))
             )
     })
-    public ResponseEntity<Map<String, Object>> getAllCandleDataSince(@RequestParam String period, @RequestParam boolean is_krw_market) {
-        try {
-            Map<String, Object> data = candleService.getAllCandleDataSince(period, is_krw_market);
-            return ResponseEntity.status(HttpStatus.OK).body(data);
-        } catch (Exception e) {
-            log.error("Error fetching candle data since {}", period, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+    public CompletableFuture<ResponseEntity<Map<String, Object>>> getAllCandleDataSince(@RequestParam String period, @RequestParam boolean is_krw_market) {
+        return candleService.getAllCandleDataSinceAsync(period, is_krw_market)
+                .thenApply(data -> ResponseEntity.status(HttpStatus.OK).body(data))
+                .exceptionally(ex -> {
+                    log.error("Error fetching candle data since {}", period);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+                });
     }
 
     @PutMapping("/upsert/manual")

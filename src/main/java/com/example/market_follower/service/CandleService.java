@@ -10,24 +10,22 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CandleService {
     private final StringRedisTemplate redisTemplate;
-    private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate = new RestTemplate();
     private final UpbitCandle7dRepository upbitCandle7dRepository;
@@ -528,53 +526,134 @@ public class CandleService {
         }
     }
 
-    // 전체 캔들 데이터를 리턴
-    public Map<String, Object> getAllCandleData(boolean is_krw_market) {
-        Map<String, Object> data = new HashMap<>();
+    @Async("taskExecutor")
+    public CompletableFuture<Map<String, Object>> getAllCandleDataAsync(boolean is_krw_market) {
+        log.info("{} 마켓 전체 캔들 데이터 비동기 조회 시작", is_krw_market ? "KRW" : "비KRW");
 
-        if (is_krw_market) {
-            // KRW 마켓만 조회
-            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketStartingWith("KRW-"));
-            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketStartingWith("KRW-"));
-            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketStartingWith("KRW-"));
-            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketStartingWith("KRW-"));
-            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketStartingWith("KRW-"));
-        } else {
-            // 비KRW 마켓만 조회
-            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketNotStartingWith("KRW-"));
-            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketNotStartingWith("KRW-"));
-            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketNotStartingWith("KRW-"));
-            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketNotStartingWith("KRW-"));
-            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketNotStartingWith("KRW-"));
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> data = new HashMap<>();
 
-        log.info("{} 마켓 전체 캔들 데이터 조회 완료", is_krw_market ? "KRW" : "비KRW");
-        return data;
+            if (is_krw_market) {
+                // 각 테이블별로 병렬 조회
+                CompletableFuture<List<?>> candle7d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle7dRepository.findByMarketStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle30d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle30dRepository.findByMarketStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle3m = CompletableFuture.supplyAsync(() ->
+                        upbitCandle3mRepository.findByMarketStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle1y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle1yRepository.findByMarketStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle5y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle5yRepository.findByMarketStartingWith("KRW-"));
+
+                // 모든 조회 완료까지 대기
+                CompletableFuture.allOf(candle7d, candle30d, candle3m, candle1y, candle5y).join();
+
+                try {
+                    data.put("upbit_candle_7d", candle7d.get());
+                    data.put("upbit_candle_30d", candle30d.get());
+                    data.put("upbit_candle_3m", candle3m.get());
+                    data.put("upbit_candle_1y", candle1y.get());
+                    data.put("upbit_candle_5y", candle5y.get());
+                } catch (Exception e) {
+                    log.error("KRW 마켓 병렬 조회 중 오류", e);
+                    throw new RuntimeException(e);
+                }
+            } else {
+                // 비KRW 마켓 병렬 조회
+                CompletableFuture<List<?>> candle7d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle7dRepository.findByMarketNotStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle30d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle30dRepository.findByMarketNotStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle3m = CompletableFuture.supplyAsync(() ->
+                        upbitCandle3mRepository.findByMarketNotStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle1y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle1yRepository.findByMarketNotStartingWith("KRW-"));
+                CompletableFuture<List<?>> candle5y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle5yRepository.findByMarketNotStartingWith("KRW-"));
+
+                CompletableFuture.allOf(candle7d, candle30d, candle3m, candle1y, candle5y).join();
+
+                try {
+                    data.put("upbit_candle_7d", candle7d.get());
+                    data.put("upbit_candle_30d", candle30d.get());
+                    data.put("upbit_candle_3m", candle3m.get());
+                    data.put("upbit_candle_1y", candle1y.get());
+                    data.put("upbit_candle_5y", candle5y.get());
+                } catch (Exception e) {
+                    log.error("비KRW 마켓 병렬 조회 중 오류", e);
+                    throw new RuntimeException(e);
+                }
+            }
+
+            log.info("{} 마켓 전체 캔들 데이터 비동기 조회 완료", is_krw_market ? "KRW" : "비KRW");
+            return data;
+        });
     }
 
-    // 특정 시점 이후 캔들 데이터를 리턴
-    public Map<String, Object> getAllCandleDataSince(String period, boolean is_krw_market) {
-        Map<String, Object> data = new HashMap<>();
-        LocalDateTime fromDateTime = LocalDate.parse(period).atStartOfDay();
+    @Async("taskExecutor")
+    public CompletableFuture<Map<String, Object>> getAllCandleDataSinceAsync(String period, boolean is_krw_market) {
+        log.info("{} 마켓 {} 이후 캔들 데이터 비동기 조회 시작", is_krw_market ? "KRW" : "비KRW", period);
 
-        if (is_krw_market) {
-            // KRW 마켓만 조회
-            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-        } else {
-            // 비KRW 마켓만 조회
-            data.put("upbit_candle_7d", upbitCandle7dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_30d", upbitCandle30dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_3m", upbitCandle3mRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_1y", upbitCandle1yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-            data.put("upbit_candle_5y", upbitCandle5yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
-        }
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, Object> data = new HashMap<>();
+            LocalDateTime fromDateTime = LocalDate.parse(period).atStartOfDay();
 
-        log.info("{} 마켓 {} 이후 캔들 데이터 조회 완료", is_krw_market ? "KRW" : "비KRW", period);
-        return data;
+            if (is_krw_market) {
+                // KRW 마켓 병렬 조회
+                CompletableFuture<List<?>> candle7d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle7dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle30d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle30dRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle3m = CompletableFuture.supplyAsync(() ->
+                        upbitCandle3mRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle1y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle1yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle5y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle5yRepository.findByMarketStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+
+                CompletableFuture.allOf(candle7d, candle30d, candle3m, candle1y, candle5y).join();
+
+                try {
+                    data.put("upbit_candle_7d", candle7d.get());
+                    data.put("upbit_candle_30d", candle30d.get());
+                    data.put("upbit_candle_3m", candle3m.get());
+                    data.put("upbit_candle_1y", candle1y.get());
+                    data.put("upbit_candle_5y", candle5y.get());
+                } catch (Exception e) {
+                    log.error("KRW 마켓 {} 이후 병렬 조회 중 오류", period, e);
+                    throw new RuntimeException(e);
+                }
+            } else {
+                // 비KRW 마켓 병렬 조회
+                CompletableFuture<List<?>> candle7d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle7dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle30d = CompletableFuture.supplyAsync(() ->
+                        upbitCandle30dRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle3m = CompletableFuture.supplyAsync(() ->
+                        upbitCandle3mRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle1y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle1yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+                CompletableFuture<List<?>> candle5y = CompletableFuture.supplyAsync(() ->
+                        upbitCandle5yRepository.findByMarketNotStartingWithAndCandleDateTimeKstGreaterThanEqual("KRW-", fromDateTime));
+
+                CompletableFuture.allOf(candle7d, candle30d, candle3m, candle1y, candle5y).join();
+
+                try {
+                    data.put("upbit_candle_7d", candle7d.get());
+                    data.put("upbit_candle_30d", candle30d.get());
+                    data.put("upbit_candle_3m", candle3m.get());
+                    data.put("upbit_candle_1y", candle1y.get());
+                    data.put("upbit_candle_5y", candle5y.get());
+                } catch (Exception e) {
+                    log.error("비KRW 마켓 {} 이후 병렬 조회 중 오류", period, e);
+                    throw new RuntimeException(e);
+                }
+            }
+
+            log.info("{} 마켓 {} 이후 캔들 데이터 비동기 조회 완료", is_krw_market ? "KRW" : "비KRW", period);
+            return data;
+        });
     }
 
     // 특정 코인의 1 Day 캔들 반환
