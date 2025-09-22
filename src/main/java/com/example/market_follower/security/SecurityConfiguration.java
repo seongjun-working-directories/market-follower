@@ -43,6 +43,8 @@ public class SecurityConfiguration {
                                 "/swagger-resources/configuration/security"
                         ).permitAll()
 
+                        .requestMatchers("/candle/**").permitAll()
+
                         .requestMatchers("/h2-console/**").permitAll()
 
                         .requestMatchers("/auth/**").permitAll()
